@@ -1,0 +1,90 @@
+% Compile with: pdflatex Adarsh_Sahu_Resume.tex
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[margin=0.55in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{tabularx}
+\usepackage{microtype}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\tabcolsep}{0pt}
+\setlist[itemize]{leftmargin=1.2em, itemsep=1.5pt, topsep=2pt, parsep=0pt, partopsep=0pt}
+
+\definecolor{primary}{RGB}{15, 23, 42}
+\definecolor{accent}{RGB}{2, 132, 199}
+
+\titleformat{\section}
+  {\large\bfseries\scshape\color{primary}}{}{0pt}{}[\vspace{-4pt}\rule{\textwidth}{0.8pt}]
+\titlespacing*{\section}{0pt}{8pt}{4pt}
+
+\newcommand{\resumeItem}[1]{\item \small{#1}}
+\newcommand{\projectHeading}[3]{%
+  \vspace{3pt}\noindent\textbf{#1} \;|\; \textit{\small #2}\hfill \textbf{\small #3}\par\vspace{-2pt}
+}
+
+\begin{document}
+
+\begin{center}
+  {\LARGE\bfseries\color{primary} Adarsh Sahu}\\[3pt]
+  \small Jamshedpur, Jharkhand \;|\; 92040-88891 \;|\;
+  \href{mailto:adarshprivate678@gmail.com}{\color{accent}adarshprivate678@gmail.com} \;|\;
+  \href{https://github.com/addaarrssh}{\color{accent}github.com/addaarrssh}
+\end{center}
+
+\section{Summary}
+\small Undergraduate student at NIT Jamshedpur with hands-on experience in machine learning, analytics, anomaly detection, forecasting, and RAG-based AI applications. Built end-to-end projects using Python, SQL, pandas, scikit-learn, Streamlit, FAISS, and LLM APIs, with a focus on practical, data-driven applications and interactive deployment.
+
+\section{Education}
+\begin{tabularx}{\textwidth}{@{}X r@{}}
+  \textbf{National Institute of Technology Jamshedpur} & \textbf{Jamshedpur, Jharkhand} \\
+  \textit{B.Tech in Production and Industrial Engineering} \;|\; \textbf{CGPA: 7.45/10} & \textbf{2024--2028}
+\end{tabularx}
+
+\section{Projects}
+
+\projectHeading{AI Study Buddy}{Python, Streamlit, Groq API, RAG, FAISS, sentence-transformers, PyMuPDF}{2026}
+\begin{itemize}
+  \resumeItem{Built an exam-focused RAG application that converts handwritten and typed PDF notes into a searchable knowledge base for question answering and structured revision support.}
+  \resumeItem{Implemented an end-to-end pipeline with document parsing, chunking, embedding generation, FAISS vector search, and retrieval-grounded response generation over uploaded study material.}
+  \resumeItem{Added previous-year-question analysis to identify recurring topics and generate targeted summaries, important questions, and last-minute revision content for faster exam preparation.}
+\end{itemize}
+
+\projectHeading{IPL 2026 Winner Prediction}{Python, pandas, scikit-learn, XGBoost, Streamlit, Web Scraping}{2026}
+\begin{itemize}
+  \resumeItem{Developed a cricket forecasting system using XGBoost to estimate team win probabilities from historical IPL match data, current season trends, and simulation-based projections.}
+  \resumeItem{Engineered match-level features including recent form, venue advantage, head-to-head record, and team balance from historical and live-updated cricket datasets.}
+  \resumeItem{Built a Streamlit dashboard to display predictions, team comparisons, points-table context, and season-outcome insights in an interactive format.}
+\end{itemize}
+
+\projectHeading{Customer Churn Prediction}{Python, pandas, NumPy, scikit-learn, Streamlit, Seaborn}{2026}
+\begin{itemize}
+  \resumeItem{Built an end-to-end churn prediction system on the IBM Telco Customer Churn dataset, covering data cleaning, EDA, preprocessing, model training, and deployment on 7,032 customer records.}
+  \resumeItem{Created reusable preprocessing workflows using \texttt{Pipeline} and \texttt{ColumnTransformer} with scaling, one-hot encoding, and feature preparation for robust training.}
+  \resumeItem{Compared Logistic Regression and XGBoost, selected the stronger model based on accuracy and ROC-AUC, and deployed a Streamlit app achieving about 80\% accuracy and 0.84 ROC-AUC.}
+\end{itemize}
+
+\projectHeading{Stock Anomaly Detector}{Python, pandas, scikit-learn, yfinance, Streamlit, Matplotlib}{2026}
+\begin{itemize}
+  \resumeItem{Developed a market monitoring app using Isolation Forest to detect unusual price and volume behavior in NSE-listed stocks from multi-year OHLCV data.}
+  \resumeItem{Engineered anomaly features such as daily return, intraday range, and volume ratio to identify abnormal market activity without labeled event data.}
+  \resumeItem{Built an interactive Streamlit dashboard to visualize anomalous trading periods and support event-based investigation of unusual stock movements.}
+\end{itemize}
+
+\section{Technical Skills}
+\small
+\textbf{Languages:} Python, SQL, JavaScript, HTML/CSS\\
+\textbf{Data Analytics:} EDA, data cleaning, feature engineering, data visualization, statistical analysis, forecasting\\
+\textbf{Machine Learning:} regression, classification, anomaly detection, model evaluation, preprocessing pipelines, time-series forecasting, simulation-based prediction\\
+\textbf{Libraries / Tools:} pandas, NumPy, Matplotlib, Seaborn, scikit-learn, XGBoost, Streamlit, Jupyter Notebook, Git, GitHub, VS Code\\
+\textbf{AI / LLM Concepts:} RAG, embeddings, vector databases, FAISS, prompt engineering, LLM application development\\[2pt]
+\textbf{Currently Learning -- ML Foundations:} probability and statistics, linear algebra, calculus, hypothesis testing, bias--variance tradeoff, regularization, cross-validation, hyperparameter tuning, imbalanced-data handling\\
+\textbf{Currently Learning -- Deep Learning:} neural networks, backpropagation, activation and loss functions, TensorFlow, PyTorch, transformers, attention\\
+\textbf{Currently Learning -- ML Engineering:} modular and testable Python, FastAPI, Flask, Docker, AWS deployment, model monitoring, experiment tracking
+
+\end{document}

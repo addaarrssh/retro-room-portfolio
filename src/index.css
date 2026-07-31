@@ -1,0 +1,522 @@
+@import 'tailwindcss';
+
+/* ==========================================================================
+   Design tokens. Deep neutral room, warm lamp, cyan phosphor.
+   ========================================================================== */
+@theme {
+  --font-pixel: 'VT323', 'Courier New', monospace;
+  --font-mono: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* The virtual desktop is meant to read as macOS, so its UI font is the
+     system stack — SF Pro on a Mac, and a sane fallback everywhere else.
+     Monospace stays for code, metrics and terminal output only. */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', 'Inter', system-ui,
+    sans-serif;
+
+  --color-room: #09090b;
+  --color-lamp: #ffaa44;
+  --color-lamp-soft: #ffebd6;
+  --color-phosphor: #6ff2ff;
+  --color-phosphor-dim: #1d8a99;
+
+  --color-crt-0: #04060a;
+  --color-crt-1: #0a0f18;
+  --color-crt-2: #121a26;
+  --color-crt-3: #1e293b;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: #09090b;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* The 3D canvas owns the cursor; DesktopOS re-enables selection where it
+   actually makes sense (terminal output, email address, project copy). */
+canvas {
+  outline: none;
+  display: block;
+  touch-action: none;
+}
+
+/* ==========================================================================
+   Scrollbars inside OS windows — chunky, 90s, no rounded corners.
+   ========================================================================== */
+.os-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #2b3a4f #0a0f18;
+}
+.os-scroll::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+.os-scroll::-webkit-scrollbar-track {
+  background: #0a0f18;
+  border-left: 1px solid #1e293b;
+}
+.os-scroll::-webkit-scrollbar-thumb {
+  background: #2b3a4f;
+  border: 1px solid #3d5170;
+}
+.os-scroll::-webkit-scrollbar-thumb:hover {
+  background: #3d5170;
+}
+
+/* ==========================================================================
+   CRT treatment. Applied over DesktopOS, inside the screen plane.
+   ========================================================================== */
+/* Scanlines have to be present but nearly subliminal. At 0.28 alpha over a 4px
+   period they were eating roughly a quarter of the luminance of every line of
+   body copy — legible in a screenshot, genuinely tiring to read. The tell that
+   a CRT is being simulated is the TEXTURE, not the contrast, so the alpha is
+   low and the period is tight. */
+.crt-scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.11) 3px,
+    rgba(0, 0, 0, 0.11) 4px
+  );
+  z-index: 900;
+  mix-blend-mode: multiply;
+}
+
+/* The vignette darkens the corners of the tube. The cyan wash that used to sit
+   under it has gone: a phosphor tint over the WHOLE screen turns a flat teal
+   desktop into a gradient and pushes every white panel off-white, which is the
+   opposite of the crisp period look. Corners only, and gently. */
+.crt-vignette::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 899;
+  background: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0) 85%, rgba(0, 0, 0, 0.15) 100%);
+}
+
+/* Clean 90s CRT Screen Bezel Cutout (Matching Henry Heffernan's reference) */
+.crt-tube-container {
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.7),
+    inset 0 0 4px rgba(0, 0, 0, 0.25);
+}
+
+/* Subtle Glass Sheen Reflection (No black ring overlay) */
+.crt-glass-glare::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 897;
+  border-radius: 6px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.02) 35%,
+    transparent 65%
+  );
+}
+
+/* Slow rolling refresh bar. */
+@keyframes crt-roll {
+  0% {
+    transform: translateY(-14%);
+  }
+  100% {
+    transform: translateY(114%);
+  }
+}
+.crt-roll {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 14%;
+  z-index: 898;
+  pointer-events: none;
+  background: linear-gradient(
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.035) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: crt-roll 7s linear infinite;
+}
+
+/* Power-on flash: the tube striking, then blooming open. */
+@keyframes crt-power {
+  0% {
+    opacity: 1;
+    transform: scaleY(0.004);
+    filter: brightness(6);
+  }
+  22% {
+    opacity: 1;
+    transform: scaleY(0.01);
+    filter: brightness(6);
+  }
+  46% {
+    opacity: 1;
+    transform: scaleY(1);
+    filter: brightness(3);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleY(1);
+    filter: brightness(1);
+  }
+}
+.crt-power-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 950;
+  pointer-events: none;
+  background: #ddfdff;
+  transform-origin: center;
+  animation: crt-power 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Text glow used for phosphor headings. */
+.phosphor {
+  text-shadow:
+    0 0 1px rgba(111, 242, 255, 0.9),
+    0 0 8px rgba(111, 242, 255, 0.35);
+}
+
+/* Chunky 90s bevels, drawn with box-shadow so there is no image dependency. */
+.bevel-out {
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.14),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.75);
+}
+.bevel-in {
+  box-shadow:
+    inset -1px -1px 0 rgba(255, 255, 255, 0.1),
+    inset 1px 1px 0 rgba(0, 0, 0, 0.8);
+}
+
+/* ==========================================================================
+   Micro-animations
+   ========================================================================== */
+@keyframes blink-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+.caret {
+  animation: blink-caret 1s step-end infinite;
+}
+
+@keyframes window-open {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.window-open {
+  animation: window-open 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-fade-in {
+  animation: fade-in 450ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+  }
+}
+.fade-up {
+  animation: fade-up 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crt-roll,
+  .caret {
+    animation: none;
+  }
+  .window-open,
+  .fade-up {
+    animation-duration: 1ms;
+  }
+}
+
+/* ==========================================================================
+   The Showcase document — a personal homepage from the late nineties.
+
+   These four rules carry the entire look of the page inside the browser
+   window, and each one is doing a specific job:
+
+   · .showcase-display is the heavy slab serif used for every heading, the
+     name in the rail, and the small run-in labels. One face, many sizes —
+     the hierarchy comes from size alone, never from colour or weight.
+   · The body column is JUSTIFIED with hyphenation. Justification is the
+     single most period-correct typographic choice available and the reason
+     the column reads as a printed document; without hyphens it opens rivers
+     of whitespace in a column this narrow, so the two go together.
+   · Links are blue-violet and underlined, including visited — no hover
+     colour change, because CSS of that era barely had one.
+   · Scrollbars are the chunky grey system furniture, not thin overlays.
+   ========================================================================== */
+.showcase-display {
+  font-family: 'Bitter', Rockwell, 'Bookman Old Style', Georgia, serif;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.showcase-doc {
+  font-size: 13.5px;
+  line-height: 1.5;
+  text-align: justify;
+  hyphens: auto;
+}
+
+/* Headings and short run-in labels must NOT be justified — justifying a
+   two-word heading stretches it across the column, which is the classic
+   giveaway of a stylesheet applied too broadly. */
+.showcase-doc h1,
+.showcase-doc h2,
+.showcase-doc h3,
+.showcase-doc h4,
+.showcase-doc label,
+.showcase-doc .showcase-display {
+  text-align: left;
+  hyphens: none;
+}
+
+.showcase-doc::-webkit-scrollbar {
+  width: 16px;
+}
+.showcase-doc::-webkit-scrollbar-track {
+  background: #dfdfdf;
+}
+.showcase-doc::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  box-shadow:
+    inset -1px -1px 0 #000000,
+    inset 1px 1px 0 #ffffff,
+    inset -2px -2px 0 #808080,
+    inset 2px 2px 0 #dfdfdf;
+}
+
+/* ==========================================================================
+   .retro-ui — a scoped reset that drags modern app UI back to Windows 95.
+
+   The nine apps inside the desktop were each written with their own modern
+   styling: soft corners, gradient buttons, coloured accent text, blurred
+   shadows. Roughly seventy rounded corners and twenty shadows between them.
+   Once the window CHROME became a 1990s frame, every one of those read as a
+   seam — a period window with a 2024 web page inside it.
+
+   Rewriting all nine by hand would mean touching hundreds of class strings and
+   would leave the apps unable to switch back. So the era is handled where it
+   belongs: as a theme, applied once at the window body, cascading down.
+
+   Where the Mac of the same era described form with a 1px black outline,
+   Windows described it with a FOUR-COLOUR BEVEL: white top-left, light grey
+   inner, dark grey inner, black bottom-right. That bevel — raised for buttons,
+   sunken for wells — is the single most recognisable thing about the system,
+   and it is what most of these rules are reconstructing.
+
+   Rules are deliberately blunt and !important, because they exist to overrule
+   utility classes already on the elements. This is the one place in the
+   codebase where that is the correct tool rather than a smell — a scoped reset
+   has to win against Tailwind by definition.
+   ========================================================================== */
+
+.retro-ui,
+.retro-ui * {
+  /* Nothing in the system was round. Every corner is a pixel corner. */
+  border-radius: 0 !important;
+  text-shadow: none !important;
+  backdrop-filter: none !important;
+  filter: none !important;
+}
+
+.retro-ui {
+  /* The UI face is the era's grey; content wells are white. */
+  font-family: 'Tahoma', 'Verdana', 'Geneva', sans-serif !important;
+  font-size: 12px !important;
+  color: #000 !important;
+  background: #c0c0c0 !important;
+}
+
+/* Kill every gradient fill. */
+.retro-ui [class*='gradient'],
+.retro-ui [style*='gradient'] {
+  background-image: none !important;
+}
+
+/* Coloured text goes black — the era reserved colour for selection and
+   title bars, never for body copy. */
+.retro-ui [class*='text-emerald'],
+.retro-ui [class*='text-sky'],
+.retro-ui [class*='text-blue'],
+.retro-ui [class*='text-indigo'],
+.retro-ui [class*='text-violet'],
+.retro-ui [class*='text-purple'],
+.retro-ui [class*='text-fuchsia'],
+.retro-ui [class*='text-pink'],
+.retro-ui [class*='text-rose'],
+.retro-ui [class*='text-amber'],
+.retro-ui [class*='text-cyan'],
+.retro-ui [class*='text-teal'] {
+  color: #000 !important;
+}
+
+/* Coloured panels become the system face grey. */
+.retro-ui [class*='bg-emerald'],
+.retro-ui [class*='bg-sky'],
+.retro-ui [class*='bg-blue'],
+.retro-ui [class*='bg-indigo'],
+.retro-ui [class*='bg-violet'],
+.retro-ui [class*='bg-purple'],
+.retro-ui [class*='bg-fuchsia'],
+.retro-ui [class*='bg-pink'],
+.retro-ui [class*='bg-rose'],
+.retro-ui [class*='bg-amber'],
+.retro-ui [class*='bg-cyan'],
+.retro-ui [class*='bg-teal'] {
+  background-color: #c0c0c0 !important;
+  color: #000 !important;
+}
+
+/* Dark panels invert — a near-black fill reads as a hole in a grey window. */
+.retro-ui [class*='bg-black'],
+.retro-ui [class*='bg-zinc-800'],
+.retro-ui [class*='bg-zinc-900'],
+.retro-ui [class*='bg-zinc-950'],
+.retro-ui [class*='bg-neutral-900'],
+.retro-ui [class*='bg-slate-900'] {
+  background-color: #c0c0c0 !important;
+  color: #000 !important;
+}
+
+.retro-ui [class*='bg-black'] *,
+.retro-ui [class*='bg-zinc-800'] *,
+.retro-ui [class*='bg-zinc-900'] *,
+.retro-ui [class*='bg-zinc-950'] *,
+.retro-ui [class*='bg-neutral-900'] *,
+.retro-ui [class*='bg-slate-900'] * {
+  color: #000 !important;
+}
+
+/* Borders become the sunken-well bevel rather than a flat line. */
+.retro-ui [class*='border'] {
+  border-color: #808080 #ffffff #ffffff #808080 !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+}
+
+/* THE push button: raised bevel, grey face, black text. Four colours, drawn
+   with two nested box-shadows because a 2px border cannot express them. */
+.retro-ui button,
+.retro-ui a[class*='bg-'],
+.retro-ui [role='button'] {
+  background-color: #c0c0c0 !important;
+  color: #000 !important;
+  border: none !important;
+  box-shadow:
+    inset -1px -1px 0 #000000,
+    inset 1px 1px 0 #ffffff,
+    inset -2px -2px 0 #808080,
+    inset 2px 2px 0 #dfdfdf !important;
+  padding: 3px 12px !important;
+  font-weight: 400 !important;
+}
+
+/* Pressed inverts the bevel, so the button physically sinks in. */
+.retro-ui button:active,
+.retro-ui [role='button']:active {
+  box-shadow:
+    inset 1px 1px 0 #000000,
+    inset -1px -1px 0 #ffffff,
+    inset 2px 2px 0 #808080,
+    inset -2px -2px 0 #dfdfdf !important;
+}
+
+/* Text fields are sunken wells: the same bevel, reversed, on white. */
+.retro-ui input,
+.retro-ui textarea,
+.retro-ui select {
+  background-color: #ffffff !important;
+  color: #000 !important;
+  border: none !important;
+  box-shadow:
+    inset 1px 1px 0 #808080,
+    inset -1px -1px 0 #ffffff,
+    inset 2px 2px 0 #000000,
+    inset -2px -2px 0 #dfdfdf !important;
+}
+
+/* Meters: a sunken trough with the era's navy fill, discriminated by an
+   INLINE width rather than by shape — every pill badge on the page is also
+   rounded-full, and keying off shape painted those solid too. */
+.retro-ui [class*='rounded-full'][style*='width'] {
+  background-color: #000080 !important;
+}
+
+/* Images sit in a sunken frame rather than floating on the page. */
+.retro-ui img {
+  box-shadow:
+    inset 1px 1px 0 #808080,
+    inset -1px -1px 0 #ffffff !important;
+  border: 1px solid #808080 !important;
+}
+
+/* The terminal stays black — a shell on system grey would be the wrong kind
+   of accurate. */
+.retro-ui .terminal-surface,
+.retro-ui .terminal-surface * {
+  background-color: #000 !important;
+  color: #c0c0c0 !important;
+  border-color: #000 !important;
+}
