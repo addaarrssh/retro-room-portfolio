@@ -65,6 +65,48 @@ export default function ShowcaseApp({ deepLink }) {
 
   const go = (id) => setSection(id)
 
+  /* Direct 2-finger trackpad & wheel scroll listener bound directly to the document container */
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+
+    let touchY = 0
+
+    const handleWheel = (e) => {
+      let dy = e.deltaY
+      if (e.deltaMode === 1) dy *= 32
+      if (e.deltaMode === 2) dy *= 600
+
+      el.scrollTop += dy
+      e.stopPropagation()
+    }
+
+    const handleTouchStart = (e) => {
+      if (e.touches.length >= 1) {
+        touchY = e.touches[0].clientY
+      }
+    }
+
+    const handleTouchMove = (e) => {
+      if (e.touches.length >= 1) {
+        const dy = touchY - e.touches[0].clientY
+        touchY = e.touches[0].clientY
+        el.scrollTop += dy * 1.5
+        e.stopPropagation()
+      }
+    }
+
+    el.addEventListener('wheel', handleWheel, { passive: false })
+    el.addEventListener('touchstart', handleTouchStart, { passive: false })
+    el.addEventListener('touchmove', handleTouchMove, { passive: false })
+
+    return () => {
+      el.removeEventListener('wheel', handleWheel)
+      el.removeEventListener('touchstart', handleTouchStart)
+      el.removeEventListener('touchmove', handleTouchMove)
+    }
+  }, [])
+
   return (
     <div className="flex h-full w-full overflow-hidden bg-[#fdfdfb] text-black" style={{ fontFamily: 'Georgia, "Times New Roman", Times, serif' }}>
       {/* ------------------------------------------------------- left rail */}
