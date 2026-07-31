@@ -207,16 +207,40 @@ export default function DesktopOS({
       const my = e.clientY
 
       if (mx >= rect.left && mx <= rect.right && my >= rect.top && my <= rect.bottom) {
-        const target = document.elementFromPoint(mx, my)
+        // Use elementsFromPoint (plural) to search through all layered DOM nodes under cursor
+        const elements = document.elementsFromPoint
+          ? document.elementsFromPoint(mx, my)
+          : [document.elementFromPoint(mx, my)]
         let scrollable = null
-        if (target) {
-          scrollable = target.closest('.overflow-y-auto') || target.closest('.overflow-auto') || target.closest('.showcase-doc')
+
+        for (const el of elements) {
+          if (!el || !screenEl.contains(el)) continue
+          const candidate =
+            el.closest('.overflow-y-auto') ||
+            el.closest('.overflow-auto') ||
+            el.closest('.showcase-doc')
+          if (candidate && candidate.scrollHeight > candidate.clientHeight) {
+            scrollable = candidate
+            break
+          }
         }
+
+        // Fallback: search for any open scrollable container inside active window
         if (!scrollable) {
-          scrollable = screenEl.querySelector('.showcase-doc') || screenEl.querySelector('.overflow-y-auto')
+          const containers = screenEl.querySelectorAll('.overflow-y-auto, .showcase-doc, .overflow-auto')
+          for (const c of containers) {
+            if (c.scrollHeight > c.clientHeight) {
+              scrollable = c
+              break
+            }
+          }
         }
+
         if (scrollable) {
-          scrollable.scrollTop += e.deltaY
+          let dy = e.deltaY
+          if (e.deltaMode === 1) dy *= 32
+          if (e.deltaMode === 2) dy *= 600
+          scrollable.scrollTop += dy
           e.preventDefault()
           e.stopPropagation()
         }
@@ -245,7 +269,7 @@ export default function DesktopOS({
         onPointerEnter={() => onScreenFocus?.(true)}
         onPointerLeave={() => onScreenFocus?.(false)}
         onWheel={(e) => e.stopPropagation()}
-        className="crt-tube-container crt-glass-glare crt-scanlines crt-vignette relative select-none overflow-hidden antialiased"
+        className="crt-tube-container crt-glass-glare crt-scanlines crt-vignette relative overflow-hidden antialiased"
         style={{
           width: `${SCREEN_W}px`,
           height: `${SCREEN_H}px`,
