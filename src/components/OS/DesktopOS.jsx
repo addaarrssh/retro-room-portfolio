@@ -193,6 +193,40 @@ export default function DesktopOS({
     setStartOpen(false)
   }
 
+  /* ------------------------------------------------------------- wheel scroll */
+  /* Three.js canvas captures pointer/wheel events from the window. Adding a global
+     wheel listener that checks if the cursor is over the virtual desktop OS screen
+     guarantees 100% reliable scrolling for all app windows, documents, and lists. */
+  useEffect(() => {
+    const handleWheel = (e) => {
+      const screenEl = rootRef.current
+      if (!screenEl) return
+
+      const rect = screenEl.getBoundingClientRect()
+      const mx = e.clientX
+      const my = e.clientY
+
+      if (mx >= rect.left && mx <= rect.right && my >= rect.top && my <= rect.bottom) {
+        const target = document.elementFromPoint(mx, my)
+        let scrollable = null
+        if (target) {
+          scrollable = target.closest('.overflow-y-auto') || target.closest('.overflow-auto') || target.closest('.showcase-doc')
+        }
+        if (!scrollable) {
+          scrollable = screenEl.querySelector('.showcase-doc') || screenEl.querySelector('.overflow-y-auto')
+        }
+        if (scrollable) {
+          scrollable.scrollTop += e.deltaY
+          e.preventDefault()
+          e.stopPropagation()
+        }
+      }
+    }
+
+    window.addEventListener('wheel', handleWheel, { passive: false })
+    return () => window.removeEventListener('wheel', handleWheel)
+  }, [])
+
   return (
     <OSThemeContext.Provider value={OS_WIN95}>
       <div
@@ -210,7 +244,8 @@ export default function DesktopOS({
            is precisely backwards. */
         onPointerEnter={() => onScreenFocus?.(true)}
         onPointerLeave={() => onScreenFocus?.(false)}
-        className="crt-tube-container crt-glass-glare crt-glass-fingerprints crt-scanlines crt-vignette relative select-none overflow-hidden antialiased"
+        onWheel={(e) => e.stopPropagation()}
+        className="crt-tube-container crt-glass-glare crt-scanlines crt-vignette relative select-none overflow-hidden antialiased"
         style={{
           width: `${SCREEN_W}px`,
           height: `${SCREEN_H}px`,

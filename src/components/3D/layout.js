@@ -33,7 +33,7 @@ export const PANEL = {
   w: 1.144,
   h: 0.854,
   d: 0.024,
-  y: 1.265,
+  y: 1.42,
   z: -0.043, // front face lands at -0.031
 }
 
@@ -45,7 +45,7 @@ export const PANEL = {
 export const SCREEN = {
   w: 1.1,
   h: 0.825,
-  y: 1.2645,
+  y: 1.42,
   z: -0.028,
 }
 

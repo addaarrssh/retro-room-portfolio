@@ -36,12 +36,12 @@ import { SCREEN, monitorViewDistance } from './layout'
    next frame it gets.
    ========================================================================== */
 
-const ROOM_TARGET = [0, 0.72, 0]
+const ROOM_TARGET = [0, 0.85, 0]
 
 export const VIEWS = {
-  /* Perfectly balanced room framing matching Henry Heffernan reference. */
+  /* Pulled back room view framing — desk and monitor look small in the middle of room. */
   ROOM: {
-    position: [0, 1.65, 5.4],
+    position: [0, 2.2, 7.2],
     target: ROOM_TARGET,
   },
 }

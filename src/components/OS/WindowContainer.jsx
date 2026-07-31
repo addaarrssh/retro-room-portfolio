@@ -177,6 +177,7 @@ export default function WindowContainer({
         ...(isRetro && focused ? { boxShadow: T.windowShadowFocused } : null),
       }}
       onPointerDown={onFocus}
+      onWheel={(e) => e.stopPropagation()}
     >
       {/* ------------------------------------------------------- Modern macOS Window Header */}
       <div

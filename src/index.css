@@ -112,58 +112,28 @@ canvas {
   background: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0) 85%, rgba(0, 0, 0, 0.15) 100%);
 }
 
-/* Clean 90s CRT Screen Bezel Cutout (Matching Henry Heffernan's reference) */
+/* Clean 90s CRT Screen Bezel Cutout */
 .crt-tube-container {
-  border-radius: 8px;
+  border-radius: 6px;
   box-shadow:
-    inset 0 0 0 2px rgba(0, 0, 0, 0.85),
-    inset 0 0 12px 4px rgba(0, 0, 0, 0.45);
+    inset 0 0 0 1px rgba(0, 0, 0, 0.7),
+    inset 0 0 4px rgba(0, 0, 0, 0.25);
 }
 
-/* Glass Sheen & Vertical Phosphor Rainbow Glare (100% replica of Henry Heffernan's CRT) */
+/* Subtle Glass Sheen Reflection */
 .crt-glass-glare::before {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 897;
-  border-radius: 8px;
-  background:
-    /* Vertical Phosphor Rainbow / Light Reflection Band (Center-Right in Henry's photo) */
-    linear-gradient(
-      90deg,
-      transparent 40%,
-      rgba(235, 220, 160, 0.09) 47%,
-      rgba(110, 225, 255, 0.16) 50%,
-      rgba(180, 245, 190, 0.08) 53%,
-      transparent 59%
-    ),
-    /* Diagonal Window Light Sheen (Top Left corner to bottom) */
-    linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.14) 0%,
-      rgba(255, 255, 255, 0.04) 25%,
-      transparent 55%
-    );
-}
-
-/* Fingerprint & Oily Smudge Overlay (As seen scattered across top-right & center in Henry's photo) */
-.crt-glass-fingerprints::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 898;
-  border-radius: 8px;
-  background-image:
-    radial-gradient(ellipse 38px 26px at 62% 32%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.08) 40%, transparent 70%),
-    radial-gradient(ellipse 48px 32px at 70% 38%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.05) 45%, transparent 75%),
-    radial-gradient(ellipse 30px 22px at 58% 26%, rgba(255, 255, 255, 0.2) 0%, transparent 65%),
-    radial-gradient(ellipse 52px 36px at 35% 30%, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.04) 50%, transparent 80%),
-    radial-gradient(ellipse 42px 30px at 66% 68%, rgba(255, 255, 255, 0.14) 0%, transparent 70%),
-    radial-gradient(ellipse 32px 24px at 45% 45%, rgba(255, 255, 255, 0.16) 0%, transparent 60%);
-  mix-blend-mode: overlay;
-  opacity: 0.9;
+  border-radius: 6px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.07) 0%,
+    rgba(255, 255, 255, 0.02) 30%,
+    transparent 60%
+  );
 }
 
 /* Slow rolling refresh bar. */

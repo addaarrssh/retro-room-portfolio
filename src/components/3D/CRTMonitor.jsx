@@ -356,12 +356,12 @@ export default function CRTMonitor({
             </mesh>
           </group>
 
-          {/* Horizontal 1995 PC Desktop Case Unit under Monitor (Replica of Henry Heffernan's PC base) */}
-          <group position={[0, 0.72, -0.05]}>
+          {/* Horizontal 1995 PC Desktop Case Unit under Monitor (Resting flat on desk) */}
+          <group position={[0, 0.795, -0.1]}>
             {/* Main Beige Desktop Case Chassis */}
             <RoundedBox
-              args={[0.68, 0.22, 0.54]}
-              radius={0.016}
+              args={[0.58, 0.15, 0.44]}
+              radius={0.012}
               smoothness={4}
               castShadow
               receiveShadow
@@ -370,69 +370,63 @@ export default function CRTMonitor({
                 color="#dad5c8"
                 roughness={0.62}
                 roughnessMap={casePlastic}
-                clearcoat={0.25}
+                clearcoat={0.2}
                 clearcoatRoughness={0.55}
               />
             </RoundedBox>
 
             {/* Front Panel Inset Bezel Section */}
-            <mesh position={[0, 0, 0.271]}>
-              <planeGeometry args={[0.66, 0.2]} />
+            <mesh position={[0, 0, 0.221]}>
+              <planeGeometry args={[0.56, 0.13]} />
               <meshStandardMaterial color="#d2ccbf" roughness={0.7} />
             </mesh>
 
             {/* 3.5" Floppy Disk Drive Slot (Right side of front face) */}
-            <group position={[0.18, 0.02, 0.272]}>
+            <group position={[0.15, 0.01, 0.222]}>
               {/* Drive Recess */}
               <mesh position={[0, 0, 0]}>
-                <boxGeometry args={[0.16, 0.06, 0.01]} />
+                <boxGeometry args={[0.14, 0.045, 0.008]} />
                 <meshStandardMaterial color="#22201c" roughness={0.8} />
               </mesh>
               {/* Floppy Eject Slot */}
-              <mesh position={[0, 0.005, 0.004]}>
-                <boxGeometry args={[0.12, 0.006, 0.005]} />
+              <mesh position={[0, 0.003, 0.003]}>
+                <boxGeometry args={[0.1, 0.005, 0.004]} />
                 <meshStandardMaterial color="#0d0d0d" />
               </mesh>
               {/* Eject Button */}
-              <mesh position={[0.05, -0.015, 0.006]}>
-                <boxGeometry args={[0.018, 0.012, 0.008]} />
+              <mesh position={[0.04, -0.01, 0.004]}>
+                <boxGeometry args={[0.015, 0.009, 0.006]} />
                 <meshStandardMaterial color="#c0bba9" roughness={0.5} />
               </mesh>
               {/* Drive Activity LED */}
-              <mesh position={[-0.05, -0.015, 0.006]}>
-                <sphereGeometry args={[0.004, 10, 10]} />
+              <mesh position={[-0.04, -0.01, 0.004]}>
+                <sphereGeometry args={[0.003, 10, 10]} />
                 <meshBasicMaterial color="#ef4444" toneMapped={false} />
               </mesh>
             </group>
 
-            {/* 5.25" CD-ROM / Bay Slot (Upper right) */}
-            <mesh position={[0.18, 0.06, 0.272]}>
-              <boxGeometry args={[0.16, 0.038, 0.008]} />
-              <meshStandardMaterial color="#c5c0b0" roughness={0.6} />
-            </mesh>
-
             {/* Power Push Button & Brand Badge (Left side of front face) */}
-            <group position={[-0.2, -0.02, 0.272]}>
+            <group position={[-0.16, -0.01, 0.222]}>
               {/* Round Power Button */}
-              <mesh position={[-0.06, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
-                <cylinderGeometry args={[0.016, 0.016, 0.01, 20]} />
+              <mesh position={[-0.05, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
+                <cylinderGeometry args={[0.012, 0.012, 0.008, 20]} />
                 <meshStandardMaterial color="#aba696" roughness={0.5} />
               </mesh>
               {/* Reset Button */}
               <mesh position={[-0.02, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
-                <cylinderGeometry args={[0.008, 0.008, 0.008, 16]} />
+                <cylinderGeometry args={[0.006, 0.006, 0.006, 16]} />
                 <meshStandardMaterial color="#8a8577" roughness={0.5} />
               </mesh>
               {/* Green Power LED */}
-              <mesh position={[0.02, 0, 0]}>
-                <sphereGeometry args={[0.005, 12, 12]} />
+              <mesh position={[0.015, 0, 0]}>
+                <sphereGeometry args={[0.004, 12, 12]} />
                 <meshBasicMaterial color="#22c55e" toneMapped={false} />
               </mesh>
             </group>
 
             {/* Swivel Neck Base connecting PC unit to Monitor Base */}
-            <mesh position={[0, 0.12, 0]} castShadow>
-              <cylinderGeometry args={[0.12, 0.15, 0.04, 32]} />
+            <mesh position={[0, 0.095, 0]} castShadow>
+              <cylinderGeometry args={[0.1, 0.12, 0.04, 32]} />
               <meshStandardMaterial color="#cfcadc" roughness={0.6} />
             </mesh>
           </group>
