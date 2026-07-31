@@ -70,7 +70,7 @@ export const SCREEN_HTML_FACTOR = (400 * SCREEN.w) / SCREEN_PX.w
  * framing the reference site settles into, and what PROJECT_REQUIREMENTS asks
  * for in rule 1.
  */
-export function monitorViewDistance(fovDeg, aspect, margin = 1.24) {
+export function monitorViewDistance(fovDeg, aspect, margin = 1.48) {
   const halfFov = Math.tan((fovDeg * Math.PI) / 180 / 2)
   const fitHeight = SCREEN.h / (2 * halfFov)
   const fitWidth = SCREEN.w / (2 * halfFov * aspect)
