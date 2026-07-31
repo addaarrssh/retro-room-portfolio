@@ -193,11 +193,38 @@ export default function DesktopOS({
     setStartOpen(false)
   }
 
-  /* ------------------------------------------------------------- wheel scroll */
-  /* Three.js canvas captures pointer/wheel events from the window. Adding a global
-     wheel listener that checks if the cursor is over the virtual desktop OS screen
-     guarantees 100% reliable scrolling for all app windows, documents, and lists. */
+  /* ------------------------------------------------------------- 2-Finger & Wheel Scroll */
+  /* Handles mouse scroll wheel, 2-finger trackpad swipes, and 2-finger touch gestures
+     inside the virtual display with passive: false override. */
   useEffect(() => {
+    let touchStartY = 0
+
+    const findScrollable = (mx, my, screenEl) => {
+      const elements = document.elementsFromPoint
+        ? document.elementsFromPoint(mx, my)
+        : [document.elementFromPoint(mx, my)]
+
+      for (const el of elements) {
+        if (!el || !screenEl.contains(el)) continue
+        const candidate =
+          el.closest('.overflow-y-auto') ||
+          el.closest('.overflow-auto') ||
+          el.closest('.showcase-doc')
+        if (candidate && candidate.scrollHeight > candidate.clientHeight) {
+          return candidate
+        }
+      }
+
+      // Fallback: search for any open scrollable container inside active window
+      const containers = screenEl.querySelectorAll('.overflow-y-auto, .showcase-doc, .overflow-auto')
+      for (const c of containers) {
+        if (c.scrollHeight > c.clientHeight) {
+          return c
+        }
+      }
+      return null
+    }
+
     const handleWheel = (e) => {
       const screenEl = rootRef.current
       if (!screenEl) return
@@ -207,39 +234,13 @@ export default function DesktopOS({
       const my = e.clientY
 
       if (mx >= rect.left && mx <= rect.right && my >= rect.top && my <= rect.bottom) {
-        // Use elementsFromPoint (plural) to search through all layered DOM nodes under cursor
-        const elements = document.elementsFromPoint
-          ? document.elementsFromPoint(mx, my)
-          : [document.elementFromPoint(mx, my)]
-        let scrollable = null
-
-        for (const el of elements) {
-          if (!el || !screenEl.contains(el)) continue
-          const candidate =
-            el.closest('.overflow-y-auto') ||
-            el.closest('.overflow-auto') ||
-            el.closest('.showcase-doc')
-          if (candidate && candidate.scrollHeight > candidate.clientHeight) {
-            scrollable = candidate
-            break
-          }
-        }
-
-        // Fallback: search for any open scrollable container inside active window
-        if (!scrollable) {
-          const containers = screenEl.querySelectorAll('.overflow-y-auto, .showcase-doc, .overflow-auto')
-          for (const c of containers) {
-            if (c.scrollHeight > c.clientHeight) {
-              scrollable = c
-              break
-            }
-          }
-        }
-
+        const scrollable = findScrollable(mx, my, screenEl)
         if (scrollable) {
           let dy = e.deltaY
           if (e.deltaMode === 1) dy *= 32
           if (e.deltaMode === 2) dy *= 600
+
+          // Smooth 2-finger trackpad & scroll wheel scrolling
           scrollable.scrollTop += dy
           e.preventDefault()
           e.stopPropagation()
@@ -247,8 +248,42 @@ export default function DesktopOS({
       }
     }
 
+    const handleTouchStart = (e) => {
+      if (e.touches.length >= 1) {
+        touchStartY = e.touches[0].clientY
+      }
+    }
+
+    const handleTouchMove = (e) => {
+      const screenEl = rootRef.current
+      if (!screenEl || e.touches.length < 1) return
+
+      const mx = e.touches[0].clientX
+      const my = e.touches[0].clientY
+      const rect = screenEl.getBoundingClientRect()
+
+      if (mx >= rect.left && mx <= rect.right && my >= rect.top && my <= rect.bottom) {
+        const deltaY = touchStartY - my
+        touchStartY = my
+
+        const scrollable = findScrollable(mx, my, screenEl)
+        if (scrollable) {
+          scrollable.scrollTop += deltaY * 1.5
+          e.preventDefault()
+          e.stopPropagation()
+        }
+      }
+    }
+
     window.addEventListener('wheel', handleWheel, { passive: false })
-    return () => window.removeEventListener('wheel', handleWheel)
+    window.addEventListener('touchstart', handleTouchStart, { passive: false })
+    window.addEventListener('touchmove', handleTouchMove, { passive: false })
+
+    return () => {
+      window.removeEventListener('wheel', handleWheel)
+      window.removeEventListener('touchstart', handleTouchStart)
+      window.removeEventListener('touchmove', handleTouchMove)
+    }
   }, [])
 
   return (

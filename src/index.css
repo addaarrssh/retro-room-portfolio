@@ -136,6 +136,15 @@ canvas {
   );
 }
 
+/* 2-Finger Trackpad & Touch Scrolling Optimization */
+.showcase-doc,
+.overflow-y-auto,
+.overflow-auto,
+.retro-ui {
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Slow rolling refresh bar. */
 @keyframes crt-roll {
   0% {
