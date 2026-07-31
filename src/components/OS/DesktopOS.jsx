@@ -210,7 +210,7 @@ export default function DesktopOS({
            is precisely backwards. */
         onPointerEnter={() => onScreenFocus?.(true)}
         onPointerLeave={() => onScreenFocus?.(false)}
-        className="crt-tube-container crt-glass-glare crt-scanlines crt-vignette relative select-none overflow-hidden antialiased"
+        className="crt-tube-container crt-glass-glare crt-glass-fingerprints crt-scanlines crt-vignette relative select-none overflow-hidden antialiased"
         style={{
           width: `${SCREEN_W}px`,
           height: `${SCREEN_H}px`,
