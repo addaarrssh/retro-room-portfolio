@@ -111,6 +111,11 @@ export default function ShowcaseApp({ deepLink }) {
     <div className="flex h-full w-full overflow-hidden bg-[#fdfdfb] text-black" style={{ fontFamily: 'Georgia, "Times New Roman", Times, serif' }}>
       {/* ------------------------------------------------------- left rail */}
       <div className="w-[172px] shrink-0 overflow-y-auto px-4 py-4">
+        <img
+          src={profile.avatar || '/avatar.jpg'}
+          alt={profile.name}
+          className="mb-3 h-14 w-14 rounded-full object-cover border border-black/30 shadow-sm"
+        />
         <div className="showcase-display text-[26px] leading-[0.95]">
           {profile.name.split(' ')[0]}
           <br />
@@ -195,6 +200,11 @@ function ResumeStrip() {
 function Home({ onGo }) {
   return (
     <div className="flex h-full flex-col items-center justify-center pb-10 text-center">
+      <img
+        src={profile.avatar || '/avatar.jpg'}
+        alt={profile.name}
+        className="mb-4 h-24 w-24 rounded-full object-cover border-2 border-black/30 shadow-md ring-4 ring-black/5"
+      />
       <h1 className="showcase-display text-[46px] leading-none">{profile.name}</h1>
       <p className="showcase-display mt-2 text-[19px]">{profile.role}</p>
 
@@ -219,8 +229,17 @@ function Home({ onGo }) {
 function About() {
   return (
     <>
-      <h1 className="showcase-display text-[40px] leading-none">Welcome</h1>
-      <h2 className="showcase-display mt-1 text-[17px]">I&rsquo;m {profile.name}</h2>
+      <div className="mb-4 flex items-center gap-4">
+        <img
+          src={profile.avatar || '/avatar.jpg'}
+          alt={profile.name}
+          className="h-16 w-16 rounded-full object-cover border-2 border-black/30 shadow-sm shrink-0"
+        />
+        <div>
+          <h1 className="showcase-display text-[36px] leading-none">Welcome</h1>
+          <h2 className="showcase-display mt-1 text-[16px]">I&rsquo;m {profile.name}</h2>
+        </div>
+      </div>
 
       <p className="mt-4">{profile.positioning}</p>
       <p className="mt-3">
