@@ -10,6 +10,7 @@ import AboutApp from './apps/AboutApp'
 import ArcadeApp from './apps/ArcadeApp'
 import ResumeApp from './apps/ResumeApp'
 import TerminalApp from './apps/TerminalApp'
+import PortfolioV3App from './apps/PortfolioV3App'
 import audio from '../../audio/AudioEngine'
 
 /* ==========================================================================
@@ -112,13 +113,18 @@ const APPS = [
     height: 400,
     component: TerminalApp,
   },
+  {
+    id: 'portfoliov3',
+    label: 'Portfolio V3',
+    title: 'Portfolio Journey 3 — Internet Explorer',
+    width: 900,
+    height: 680,
+    component: PortfolioV3App,
+    web: true,
+  },
 ]
 
-/* Which of them get a shortcut on the desktop. Not all of them: About,
-   Projects and Contact are sections INSIDE the Showcase window now, so putting
-   them on the desktop as well would advertise four doors into one room. They
-   stay in the registry because the room's props deep-link straight to them. */
-const DESKTOP_ICONS = ['showcase', 'resume', 'arcade', 'terminal']
+const DESKTOP_ICONS = ['showcase', 'resume', 'arcade', 'terminal', 'portfoliov3']
 
 export default function DesktopOS({
   powered,

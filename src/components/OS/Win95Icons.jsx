@@ -190,6 +190,22 @@ function TerminalIcon({ size }) {
   )
 }
 
+/* ------------------------------------------------------------ portfolio v3 */
+function PortfolioV3Icon({ size }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" shapeRendering="crispEdges">
+      {/* Globe / Internet Explorer style icon */}
+      <circle cx="16" cy="16" r="12" fill="#4169E1" stroke="#000080" strokeWidth="1" />
+      <ellipse cx="16" cy="16" rx="6" ry="12" fill="none" stroke="#87CEEB" strokeWidth="1" />
+      <line x1="4" y1="16" x2="28" y2="16" stroke="#87CEEB" strokeWidth="1" />
+      <line x1="6" y1="10" x2="26" y2="10" stroke="#87CEEB" strokeWidth="0.8" />
+      <line x1="6" y1="22" x2="26" y2="22" stroke="#87CEEB" strokeWidth="0.8" />
+      {/* Orbiting "e" ring */}
+      <ellipse cx="16" cy="16" rx="14" ry="5" fill="none" stroke="#FFD700" strokeWidth="1.5" transform="rotate(-25 16 16)" />
+    </svg>
+  )
+}
+
 const REGISTRY = {
   showcase: Showcase,
   resume: Resume,
@@ -199,6 +215,7 @@ const REGISTRY = {
   arcade: Arcade,
   music: MusicDisc,
   terminal: TerminalIcon,
+  portfoliov3: PortfolioV3Icon,
 }
 
 export default function Win95Icon({ appId, size = 32 }) {

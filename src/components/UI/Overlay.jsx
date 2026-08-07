@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { LogOut, Moon, Sun, Volume2, VolumeX } from 'lucide-react'
 import { profile } from '../../data/portfolio'
+import TypewriterText from './TypewriterText'
 
 /* ==========================================================================
    Overlay — the 2D chrome floating over the 3D room.
@@ -76,12 +77,28 @@ export default function Overlay({
       >
         {!isZoomed && (
           <>
-            <Slab>{profile.name}</Slab>
-            <Slab>{profile.role}</Slab>
+            <Slab>
+              <TypewriterText
+                text={profile.name}
+                speed={40}
+                delay={200}
+                playSound={true}
+                cursorChar="_"
+              />
+            </Slab>
+            <Slab>
+              <TypewriterText
+                text={profile.role}
+                speed={30}
+                delay={200 + profile.name.length * 40 + 150}
+                playSound={true}
+                cursorChar="_"
+              />
+            </Slab>
 
             {/* Clock and controls share one slab, so the panel stays a column
                 of three rather than sprawling. */}
-            <div className="pointer-events-auto flex items-center gap-1">
+            <div className="pointer-events-auto flex items-center gap-1 animate-fade-in" style={{ animationDelay: '1.2s' }}>
               <Slab tabular>{clock}</Slab>
               <SlabButton label={muted ? 'Unmute' : 'Mute'} onClick={onToggleMute}>
                 {muted ? <VolumeX size={12} /> : <Volume2 size={12} />}

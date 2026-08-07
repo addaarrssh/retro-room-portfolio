@@ -350,11 +350,18 @@ class AudioEngine {
 
   /** Mechanical keyboard clack — pitch jitters so runs never sound looped. */
   keyClick() {
-    if (!this.unlocked || this.muted) return
+    if (!this.unlocked) {
+      try {
+        this.unlock()
+      } catch {
+        /* wait for gesture */
+      }
+    }
+    if (this.muted || !this.ctx) return
     const t = this.ctx.currentTime
-    const f = 1500 + Math.random() * 900
-    this._noise(this.sfxBus, { start: t, dur: 0.028, type: 'bandpass', freq: f, q: 2.2, gain: 0.17 })
-    this._tone(this.sfxBus, { start: t, dur: 0.03, freq: 180 + Math.random() * 60, type: 'square', gain: 0.035 })
+    const f = 1600 + Math.random() * 800
+    this._noise(this.sfxBus, { start: t, dur: 0.035, type: 'bandpass', freq: f, q: 2.2, gain: 0.38 })
+    this._tone(this.sfxBus, { start: t, dur: 0.04, freq: 220 + Math.random() * 80, type: 'square', gain: 0.08 })
   }
 
   /** Window open / app launch — a short rising blip. */
