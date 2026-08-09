@@ -12,9 +12,9 @@ export const profile = {
   avatar: '/avatar.jpg',
   role: 'Machine Learning & Data Science',
   positioning:
-    'B.Tech student at NIT Jamshedpur building applied machine learning systems — forecasting, ranking, retrieval and anomaly detection — with an emphasis on honest evaluation.',
+    'Production and Industrial Engineering undergraduate at NIT Jamshedpur applying machine learning and statistics to operations problems — forecasting, ranking and fraud detection — with an emphasis on designing an evaluation that can actually fail.',
   summary:
-    'I work end to end: framing the problem, engineering the features, choosing an evaluation that can actually fail, and shipping the result as something a person can use. I care more about a model that admits uncertainty than one with a flattering accuracy number.',
+    'I work end to end: framing the problem, engineering the features, choosing an evaluation that can actually fail, and shipping the result as something a person can use. Currently interning at OA Helper building campus growth channels nationwide.',
   location: 'Jamshedpur, Jharkhand, India',
 
   // CONFIRM: portfolio-pro ships adarshprivate678@gmail.com while your account
@@ -26,10 +26,10 @@ export const profile = {
 
   // CONFIRM: add your LinkedIn URL and the link appears in Contact.app.
   // Left null it is omitted rather than rendered as a dead link.
-  linkedin: null,
+  linkedin: 'https://linkedin.com/in/addaarrssh',
   twitter: null,
 
-  availability: 'Open to ML / Data Science internships — 2026',
+  availability: 'Growth Intern at OA Helper — open to ML / Data Science roles',
 }
 
 export const disks = [
@@ -80,7 +80,8 @@ export const skillGroups = [
     skills: [
       { name: 'Python', level: 90 },
       { name: 'SQL', level: 78 },
-      { name: 'JavaScript', level: 72 },
+      { name: 'JavaScript / TypeScript', level: 72 },
+      { name: 'PostgreSQL', level: 70 },
       { name: 'HTML / CSS', level: 70 },
     ],
   },
@@ -92,7 +93,9 @@ export const skillGroups = [
       { name: 'Classification', level: 88 },
       { name: 'Regression', level: 85 },
       { name: 'Model Evaluation', level: 86 },
+      { name: 'Learning to Rank', level: 78 },
       { name: 'Time-Series Forecasting', level: 74 },
+      { name: 'Calibration & Abstention', level: 72 },
       { name: 'Anomaly Detection', level: 70 },
     ],
   },
@@ -124,6 +127,8 @@ export const toolbelt = [
   'NumPy',
   'scikit-learn',
   'XGBoost',
+  'PostgreSQL',
+  'FastAPI',
   'Matplotlib',
   'Seaborn',
   'Streamlit',
@@ -138,17 +143,24 @@ export const learningNow = [
   'Transformers & Attention',
   'FastAPI',
   'Docker',
-  'Model Monitoring',
+  'MLflow',
   'Experiment Tracking',
+  'Experiment Design',
 ]
 
 /* Timeline — study and project milestones only. No invented employment. */
 export const timeline = [
   {
     year: '2026',
-    title: 'RailCross + EnergyShield AI',
+    title: 'Growth Intern — OA Helper',
+    org: 'OA Helper (Remote)',
+    body: 'Building the campus acquisition channel nationwide — student communities, coding clubs and campus representatives — working directly with the product team on user-acquisition strategy.',
+  },
+  {
+    year: '2026',
+    title: 'RailCross + PRAHARI + Competitions',
     org: 'Self-directed / hackathon',
-    body: 'Shipped an abstaining crossing-delay classifier and an LP-based energy supply-shock optimizer, both with working interfaces.',
+    body: 'Shipped an abstaining crossing-delay classifier, a client-side fraud detection platform for the ET AI Hackathon, and competed in XAVENIR 2026 hallucination detection and MOVES 2026.',
   },
   {
     year: '2025',
@@ -184,7 +196,7 @@ export const principles = [
 ]
 
 export const aboutParagraphs = [
-  'I started in first year with Python and no idea what a loss function was. What held my attention was not the modelling itself but the gap between a number on a validation set and a system somebody can rely on — most of my work since has been about closing it.',
+  'I started in first year with Python and no idea what a loss function was. What held my attention was not the modelling itself but the gap between a number on a validation set and a system somebody can rely on — most of my work since has been about closing it. Now interning at OA Helper, I am also learning how growth and user-acquisition work from the product side.',
   'That shows up in small, deliberate choices. RailCross is evaluated on crossings held out entirely from training, and returns UNKNOWN rather than guessing when observations go stale. The search ranker is scored with NDCG and MRR because accuracy is meaningless on a ranked list. The churn model ships with the decision threshold exposed, because where that cutoff belongs depends on what a false negative costs the business.',
   'I am studying Production and Industrial Engineering at NIT Jamshedpur, which turns out to be a useful place to learn this from. The machine learning is self-directed alongside it, and the honest state of things is on the record: what I have built, and what I am still learning.',
 ]
@@ -211,6 +223,34 @@ export const projects = [
     ],
     tech: ['Python', 'Streamlit', 'Groq API', 'RAG', 'FAISS', 'sentence-transformers', 'PyMuPDF'],
     repo: 'https://github.com/addaarrssh/exam-studdybuddy',
+    demo: null,
+  },
+  {
+    id: 'prahari',
+    title: 'PRAHARI',
+    subtitle: 'Digital Fraud Intelligence Platform',
+    year: 2026,
+    accent: '#ef4444',
+    glyph: '🛡',
+    summary: 'Client-side scam detector with a weighted-signal rule engine covering 10+ fraud families and a character-trigram Naive Bayes classifier.',
+    description: 'Built a client-side scam detection platform with two independent engines — a weighted-signal rule engine covering 10+ fraud families in English, Hindi and Hinglish, and a character-trigram Naive Bayes classifier. Scored by leave-one-out cross-validation over a 48-message corpus. ET AI Hackathon 2026.',
+    metrics: [{ value: 'Naive Bayes', label: 'Classifier' }, { value: '10+', label: 'Fraud families' }],
+    tech: ['JavaScript', 'Naive Bayes', 'Rule Engine', 'NLP'],
+    repo: 'https://github.com/addaarrssh/prahari',
+    demo: null,
+  },
+  {
+    id: 'olist-sql',
+    title: 'Olist E-Commerce Analytics',
+    subtitle: 'SQL analytics on Brazilian marketplace',
+    year: 2026,
+    accent: '#8b5cf6',
+    glyph: '🛒',
+    summary: 'Modelled Brazil\'s Olist marketplace with multi-table joins, CTEs, views and window functions in PostgreSQL.',
+    description: 'End-to-end PostgreSQL analysis of Brazil\'s Olist marketplace across customers, orders, products, sellers, and reviews. Found São Paulo the largest market by GMV and quantified the link between late delivery and review score.',
+    metrics: [{ value: 'PostgreSQL', label: 'Database' }, { value: 'CTEs', label: 'Window Functions' }],
+    tech: ['PostgreSQL', 'Supabase', 'SQL', 'Data Modelling'],
+    repo: 'https://github.com/addaarrssh/olist-sql-commerce-analytics',
     demo: null,
   },
   {
