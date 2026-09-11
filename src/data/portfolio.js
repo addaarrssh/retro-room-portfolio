@@ -1,35 +1,24 @@
 /* ==========================================================================
-   portfolio.js — every word the CRT displays comes from this file.
-   Content is carried over verbatim from portfolio-pro/assets/data.js so the
-   two sites never drift apart. Edit here, never inside a component.
-
-   >>> profile.email and profile.linkedin still need confirmation — see below.
+   portfolio.js — Single source of truth for all content in Retro Room OS.
+   Directly derived from the latest Adarsh Sahu Resume (NIT Jamshedpur).
    ========================================================================== */
 
 export const profile = {
   name: 'Adarsh Sahu',
   handle: 'addaarrssh',
   avatar: '/avatar.jpg',
-  role: 'Machine Learning & Data Science',
+  role: 'Data Science | Analytics | Applied Machine Learning',
   positioning:
-    'Production and Industrial Engineering undergraduate at NIT Jamshedpur applying machine learning and statistics to operations problems — forecasting, ranking and fraud detection — with an emphasis on designing an evaluation that can actually fail.',
+    'Production and Industrial Engineering undergraduate at NIT Jamshedpur applying machine learning, statistics, and operations research to high-impact operational problems — credit risk, transit forecasting, search ranking, and fraud detection — with an emphasis on rigorous evaluation and measurable business return.',
   summary:
-    'I work end to end: framing the problem, engineering the features, choosing an evaluation that can actually fail, and shipping the result as something a person can use. Currently interning at OA Helper building campus growth channels nationwide.',
+    'Production and Industrial Engineering undergraduate at NIT Jamshedpur applying machine learning, statistics, and operations research to high-impact operational problems — credit risk, transit forecasting, search ranking, and fraud detection. Currently interning at OA Helper building campus acquisition channels nationwide.',
   location: 'Jamshedpur, Jharkhand, India',
-
-  // CONFIRM: portfolio-pro ships adarshprivate678@gmail.com while your account
-  // email is sahuadarsh678@gmail.com. Whichever you set here is what Contact.app
-  // shows and copies to the clipboard.
+  phone: '92040 88891',
   email: 'adarshprivate678@gmail.com',
-
   github: 'https://github.com/addaarrssh',
-
-  // CONFIRM: add your LinkedIn URL and the link appears in Contact.app.
-  // Left null it is omitted rather than rendered as a dead link.
   linkedin: 'https://linkedin.com/in/addaarrssh',
   twitter: null,
-
-  availability: 'Growth Intern at OA Helper — open to ML / Data Science roles',
+  availability: 'Growth Intern at OA Helper — open to ML & Data Science roles',
 }
 
 export const disks = [
@@ -45,167 +34,265 @@ export const disks = [
 export const hardware = [
   { part: 'GPU', label: 'PyTorch · CUDA', detail: 'Deep Learning & Neural Network Training' },
   { part: 'RAM', label: 'pandas · NumPy', detail: 'Data Manipulation & Vectorised Operations' },
-  { part: 'CPU', label: 'scikit-learn · XGBoost', detail: 'Classical Machine Learning & Gradient Boosting' },
-  { part: 'SSD', label: '23 Public Repos', detail: 'Model Weight Storage & Pipeline Artifacts' },
-  { part: 'PSU', label: 'Python · SQL', detail: 'Core Computational Power & Data Extraction' },
+  { part: 'CPU', label: 'scikit-learn · XGBoost', detail: 'Dual-Propensity Classifiers & Gradient Boosting' },
+  { part: 'SSD', label: '23+ Public Repos', detail: 'Model Artifacts, SHAP Explanations & Pipelines' },
+  { part: 'PSU', label: 'Python · SQL', detail: 'Core Computational Engine & Production Workflows' },
 ]
 
 export const education = {
-  institution: 'National Institute of Technology, Jamshedpur',
+  institution: 'National Institute of Technology Jamshedpur',
   shortName: 'NIT Jamshedpur',
   degree: 'B.Tech, Production and Industrial Engineering',
   startYear: 2024,
   endYear: 2028,
   cgpa: '7.45 / 10',
-  note: 'Machine learning is self-directed alongside the degree — coursework in statistics, optimisation and operations research feeds directly into the modelling work.',
+  location: 'Jamshedpur, Jharkhand',
+  coursework: 'Operations Research, Engineering Statistics, Production Management, Engineering Economics',
+  note: 'Rigorous quantitative foundation: Operations Research, Engineering Statistics, Production Management, and Engineering Economics feed directly into optimization, loss functions, and credit risk modeling.',
 }
 
 export const stats = [
-  { label: 'PUBLIC REPOS', value: '23' },
-  { label: 'CGPA', value: '7.45' },
+  { label: 'PUBLIC REPOS', value: '23+' },
+  { label: 'ROLE', value: 'OA Helper' },
   { label: 'GRADUATES', value: '2028' },
   { label: 'BASED IN', value: 'JH, IN' },
 ]
 
 /* --------------------------------------------------------------------------
-   Skill bars. `level` is a self-assessed comfort rating, not a benchmark —
-   the About window labels it as such so nothing here reads as a hard metric.
-   Groups flagged `learning` render in their own clearly-marked block.
+   Skill groups — aligned directly with the updated resume sections
    -------------------------------------------------------------------------- */
 export const skillGroups = [
   {
-    id: 'languages',
-    label: 'LANGUAGES',
+    id: 'languages-tools',
+    label: 'LANGUAGES & TOOLS',
     learning: false,
     skills: [
-      { name: 'Python', level: 90 },
-      { name: 'SQL', level: 78 },
-      { name: 'JavaScript / TypeScript', level: 72 },
-      { name: 'PostgreSQL', level: 70 },
-      { name: 'HTML / CSS', level: 70 },
+      { name: 'Python', level: 94 },
+      { name: 'SQL', level: 86 },
+      { name: 'JavaScript / TypeScript', level: 78 },
+      { name: 'pandas / NumPy', level: 92 },
+      { name: 'scikit-learn', level: 90 },
+      { name: 'XGBoost', level: 88 },
+      { name: 'PostgreSQL', level: 80 },
+      { name: 'FastAPI', level: 75 },
+      { name: 'Git', level: 85 },
     ],
   },
   {
     id: 'machine-learning',
-    label: 'MACHINE LEARNING',
+    label: 'MACHINE LEARNING & STATISTICS',
     learning: false,
     skills: [
-      { name: 'Classification', level: 88 },
-      { name: 'Regression', level: 85 },
-      { name: 'Model Evaluation', level: 86 },
-      { name: 'Learning to Rank', level: 78 },
-      { name: 'Time-Series Forecasting', level: 74 },
-      { name: 'Calibration & Abstention', level: 72 },
-      { name: 'Anomaly Detection', level: 70 },
+      { name: 'Classification & Dual-Propensity', level: 90 },
+      { name: 'Credit Risk Scoring (Gini, KS)', level: 88 },
+      { name: 'Learning to Rank (NDCG, MRR)', level: 86 },
+      { name: 'Calibration & Abstention Bands', level: 84 },
+      { name: 'Data Leakage Audit & Control', level: 92 },
+      { name: 'Time-Series Forecasting', level: 78 },
+      { name: 'Anomaly Detection', level: 76 },
+      { name: 'Hypothesis Testing & Experiment Design', level: 82 },
     ],
   },
   {
-    id: 'data-analytics',
-    label: 'DATA & ANALYTICS',
+    id: 'ai-systems',
+    label: 'AI SYSTEMS',
     learning: false,
     skills: [
-      { name: 'Feature Engineering', level: 84 },
-      { name: 'Exploratory Analysis', level: 86 },
-      { name: 'Data Visualisation', level: 78 },
-      { name: 'Statistical Analysis', level: 75 },
-    ],
-  },
-  {
-    id: 'ai-llm',
-    label: 'AI & LLM SYSTEMS',
-    learning: false,
-    skills: [
-      { name: 'RAG', level: 80 },
-      { name: 'Embeddings / FAISS', level: 76 },
-      { name: 'Prompt Engineering', level: 78 },
+      { name: 'TreeSHAP Interpretability', level: 88 },
+      { name: 'RAG Architectures', level: 84 },
+      { name: 'Vector Databases & FAISS', level: 82 },
+      { name: 'Embeddings & Chunking', level: 80 },
+      { name: 'Prompt Engineering', level: 85 },
     ],
   },
 ]
 
 export const toolbelt = [
+  'Python',
+  'SQL',
+  'JavaScript',
+  'TypeScript',
   'pandas',
   'NumPy',
   'scikit-learn',
   'XGBoost',
   'PostgreSQL',
   'FastAPI',
-  'Matplotlib',
-  'Seaborn',
-  'Streamlit',
-  'Jupyter',
+  'TreeSHAP',
+  'SciPy',
+  'FAISS',
   'Git',
-  'VS Code',
+  'Streamlit',
 ]
 
 export const learningNow = [
-  'Neural Networks & Backpropagation',
   'PyTorch',
-  'Transformers & Attention',
-  'FastAPI',
   'Docker',
   'MLflow',
-  'Experiment Tracking',
-  'Experiment Design',
+  'Neural Networks & Transformers',
+  'Advanced Operations Research',
+  'Model Monitoring & Drift Detection',
 ]
 
-/* Timeline — study and project milestones only. No invented employment. */
+/* Timeline — work experience and milestones directly from resume */
 export const timeline = [
   {
-    year: '2026',
+    year: 'Jul 2026 – Present',
     title: 'Growth Intern — OA Helper',
-    org: 'OA Helper (Remote)',
-    body: 'Building the campus acquisition channel nationwide — student communities, coding clubs and campus representatives — working directly with the product team on user-acquisition strategy.',
+    org: 'OA Helper (Remote — Ranchi, Jharkhand)',
+    body: 'Building the campus acquisition channel nationwide across student communities, coding clubs and campus representatives to drive platform adoption across engineering colleges. Translating campus feedback into targeting and positioning decisions, working directly with the product team on user-acquisition strategy.',
   },
   {
     year: '2026',
-    title: 'RailCross + PRAHARI + Competitions',
-    org: 'Self-directed / hackathon',
-    body: 'Shipped an abstaining crossing-delay classifier, a client-side fraud detection platform for the ET AI Hackathon, and competed in XAVENIR 2026 hallucination detection and MOVES 2026.',
+    title: 'Collections Intelligence & Credit Optimization',
+    org: 'Applied Credit Risk & Banking Analytics',
+    body: 'Engineered a dual-propensity classification framework for 20,000 delinquent borrowers decoupling Willingness to Pay from Ability to Pay. Eliminated 9 leakage variables and simulated a 30% contact-capacity constrained call center, delivering an INR 36.97 Crore net cash recovery uplift.',
   },
   {
-    year: '2025',
-    title: 'Ranking, retrieval and churn',
-    org: 'Self-directed',
-    body: 'Learning-to-rank on MSLR-WEB10K, a FAISS-backed exam RAG assistant, and a churn model deployed with a tunable decision threshold.',
+    year: '2026',
+    title: 'RailCross + PRAHARI + Hackathons',
+    org: 'Transit Forecasting & Fraud Detection',
+    body: 'Shipped RailCross with unseen crossing-level holdouts (ROC-AUC 0.888) and a calibrated UNKNOWN abstention band. Built PRAHARI dual-engine scam detector for the ET AI Hackathon 2026 scored via leave-one-out cross-validation.',
   },
   {
-    year: '2024',
+    year: '2025 – 2026',
+    title: 'Search Ranking, RAG & SQL Analytics',
+    org: 'Information Retrieval & Systems',
+    body: 'Built an XGBoost ranker on MSLR-WEB10K benchmark (NDCG@10 0.5581, MRR 0.8516), FAISS-backed RAG exam assistant, and relational PostgreSQL analytics for Brazil’s Olist marketplace.',
+  },
+  {
+    year: '2024 – 2028',
     title: 'B.Tech, Production & Industrial Engineering',
     org: 'NIT Jamshedpur',
-    body: 'Started the degree and started Python in the same year. Optimisation and operations research turned out to be the same tools, pointed at physical systems.',
+    body: 'Operations Research, Engineering Statistics, Production Management, and Engineering Economics coursework. Optimization and statistical theory feed directly into quantitative machine learning workflows.',
   },
 ]
+
+export const competitionsAndLeadership = {
+  competitions: [
+    { title: 'ET AI Hackathon 2026', detail: 'Built PRAHARI digital fraud intelligence platform with dual detection engines.' },
+    { title: 'XAVENIR 2026', detail: 'Hallucination detection in AI summaries without pretrained embeddings.' },
+    { title: 'MOVES 2026', detail: 'Operations & business simulation competition.' },
+  ],
+  leadership: [
+    { role: 'Core Team Member', org: 'Phocus NIT Jamshedpur', detail: 'Official photography & creative design club.' },
+    { role: 'Volunteer', org: 'National Service Scheme (NSS)', detail: 'Community outreach, student development & social initiatives.' },
+  ],
+}
 
 export const principles = [
   {
     title: 'Evaluation before accuracy',
-    body: 'The first question on any project is what a fair test looks like and how the model could fail it. Held-out groups, time-ordered splits and the right metric come before tuning.',
+    body: 'The first question on any project is what a fair test looks like and how the model could fail it. Group holdouts, time-ordered splits, and business loss metrics come before tuning.',
   },
   {
     title: "A model should be able to say 'I don't know'",
-    body: 'Abstention bands, stale-input handling and calibrated uncertainty. A prediction offered with false confidence is worse than none at all.',
+    body: 'Abstention bands, stale-input handling, and calibrated uncertainty. A prediction offered with false confidence is worse than none at all.',
   },
   {
-    title: 'Ship it as something usable',
-    body: 'Most of these projects end in an interface, because a model that only exists in a notebook has not been tested against a real person.',
+    title: 'Measurable business return',
+    body: 'Translate statistical metrics (ROC-AUC, KS, NDCG) into tangible economics — recovery uplift, cash flow impact, and constrained capacity decisions.',
   },
   {
     title: 'Claim only what the data supports',
-    body: 'Where benchmarks are synthetic, the site says so. No inflated numbers and no projects I could not walk through line by line.',
+    body: 'Zero data leakage. Audit variables, state synthetic benchmarks clearly, and claim only results that survive rigorous out-of-sample testing.',
   },
 ]
 
 export const aboutParagraphs = [
-  'I started in first year with Python and no idea what a loss function was. What held my attention was not the modelling itself but the gap between a number on a validation set and a system somebody can rely on — most of my work since has been about closing it. Now interning at OA Helper, I am also learning how growth and user-acquisition work from the product side.',
-  'That shows up in small, deliberate choices. RailCross is evaluated on crossings held out entirely from training, and returns UNKNOWN rather than guessing when observations go stale. The search ranker is scored with NDCG and MRR because accuracy is meaningless on a ranked list. The churn model ships with the decision threshold exposed, because where that cutoff belongs depends on what a false negative costs the business.',
-  'I am studying Production and Industrial Engineering at NIT Jamshedpur, which turns out to be a useful place to learn this from. The machine learning is self-directed alongside it, and the honest state of things is on the record: what I have built, and what I am still learning.',
+  'Production and Industrial Engineering undergraduate at NIT Jamshedpur applying machine learning, statistics, and operations research to high-impact operational problems — credit risk, transit forecasting, search ranking, and fraud detection — with an emphasis on rigorous evaluation and measurable business return.',
+  'I work end to end: framing the problem, engineering features, auditing for data leakage, choosing evaluations that can actually fail, and translating model outputs into clear business decisions. Currently interning at OA Helper, I build campus acquisition channels nationwide while working directly with the product team on user-acquisition strategy.',
+  'That discipline shows up across all my work: Collections Intelligence decouples Willingness from Ability to Pay across 20,000 delinquent borrowers, delivering an INR 36.97 Crore cash recovery uplift under 30% call capacity constraints. RailCross evaluates on unseen holdout crossings with an UNKNOWN abstention band reaching ~90% accuracy on decided cases. The search ranker is evaluated on NDCG and MRR, and PRAHARI operates with dual client-side engines for zero privacy leakage.',
 ]
 
 /* --------------------------------------------------------------------------
-   Projects. `metrics` are quoted from each project's own reported results.
-   `accent` drives the thumbnail gradient in Projects.app.
+   Projects — matching the updated resume
    -------------------------------------------------------------------------- */
 export const projects = [
+  {
+    id: 'collections-intelligence',
+    title: 'Collections Intelligence',
+    subtitle: 'Credit Recovery Optimizer',
+    year: 2026,
+    accent: '#10b981',
+    glyph: '💎',
+    summary:
+      'Dual-propensity classification framework for 20,000 delinquent borrowers, delivering INR 36.97 Crore net cash recovery uplift under a 30% call capacity constraint.',
+    description:
+      'Engineered a dual-propensity classification framework for 20,000 delinquent borrowers, decoupling behavioral Willingness to Pay from financial Ability to Pay to optimize call-center targeting and reduce recovery budget waste. Audited and eliminated 9 data-leakage variables; benchmarked models using global banking risk standards: ROC-AUC 0.7226, Gini Coefficient 0.4451, and Kolmogorov-Smirnov (KS) Statistic 34.15%. Applied TreeSHAP to interpret feature mechanics: proved Willingness is governed by promise-to-pay adherence and contact responsiveness, while Ability is governed by salary credit frequency and debt-to-income. Simulated a 30% contact-capacity constrained call center via a 2×2 decision matrix, delivering an INR 36.97 Crore net cash recovery uplift over the 34% random baseline.',
+    metrics: [
+      { value: '0.7226', label: 'ROC-AUC' },
+      { value: '0.4451', label: 'Gini Coeff' },
+      { value: '34.15%', label: 'KS Statistic' },
+      { value: '₹36.97 Cr', label: 'Recovery Uplift' },
+    ],
+    tech: ['Python', 'XGBoost', 'TreeSHAP', 'SciPy', 'scikit-learn', 'pandas'],
+    repo: null,
+    demo: null,
+  },
+  {
+    id: 'railcross',
+    title: 'RailCross',
+    subtitle: 'Railway Crossing Delay Assistant',
+    year: 2026,
+    accent: '#3b82f6',
+    glyph: '🚦',
+    summary:
+      'Predicts railway level-crossing state from traffic signals with a calibrated UNKNOWN abstention band lifting accuracy on decided cases to ~90%.',
+    description:
+      'Predicts railway level-crossing state from traffic and stopped-time signals, on an interactive map. Evaluated on a crossing-level holdout — 3 of 14 crossings withheld entirely from training — so figures describe unseen locations: ROC-AUC 0.888, F1 0.593 against 0.16 for a rule baseline. A calibrated UNKNOWN abstention band lifts accuracy on decided cases to ~90%, declining rather than guessing on stale inputs. Synthetic benchmarks only.',
+    metrics: [
+      { value: '0.888', label: 'ROC-AUC' },
+      { value: '~90%', label: 'Decided Accuracy' },
+      { value: '0.593', label: 'F1 Score' },
+      { value: 'Holdout', label: 'Crossing-Level' },
+    ],
+    tech: ['Python', 'scikit-learn', 'TypeScript', 'Next.js', 'React'],
+    repo: 'https://github.com/addaarrssh/railcross-ai',
+    demo: null,
+  },
+  {
+    id: 'prahari',
+    title: 'PRAHARI',
+    subtitle: 'Digital Fraud Intelligence Platform',
+    year: 2026,
+    accent: '#ef4444',
+    glyph: '🛡',
+    summary:
+      'Client-side scam detector with two independent engines: weighted-signal rule engine (10+ fraud families) and character-trigram Naive Bayes classifier.',
+    description:
+      'Client-side scam detector with two independent engines — a weighted-signal rule engine covering 10+ fraud families in English, Hindi and Hinglish, and a character-trigram Naive Bayes classifier. Scored by leave-one-out cross-validation over a 48-message corpus whose 24 negatives are real bank OTP and KYC texts, with a threshold slider exposing the precision/recall trade-off. ET AI Hackathon 2026.',
+    metrics: [
+      { value: '10+', label: 'Fraud Families' },
+      { value: 'Dual', label: 'Detection Engines' },
+      { value: 'LOOCV', label: 'Cross-Validation' },
+      { value: 'Client', label: 'Zero Privacy Leakage' },
+    ],
+    tech: ['JavaScript', 'Naive Bayes', 'Rule Engine', 'NLP', 'ET AI Hackathon'],
+    repo: 'https://github.com/addaarrssh/prahari',
+    demo: null,
+  },
+  {
+    id: 'search-ranking',
+    title: 'Search Ranking Model',
+    subtitle: 'Learning to Rank on MSLR-WEB10K',
+    year: 2026,
+    accent: '#8b5cf6',
+    glyph: '🔍',
+    summary:
+      'XGBoost ranker trained on MSLR-WEB10K (136 features) with BM25, TF-IDF, freshness & popularity signals, evaluated via NDCG@10 & MRR.',
+    description:
+      'XGBoost ranker trained on the MSLR-WEB10K benchmark (136 features, graded human relevance judgements), with BM25, TF-IDF, freshness and popularity features. Evaluated with NDCG@10 and MRR rather than accuracy, since position and graded relevance — not correctness — define a ranked list: NDCG@10 0.5581, MRR 0.8516.',
+    metrics: [
+      { value: '0.5581', label: 'NDCG@10' },
+      { value: '0.8516', label: 'MRR' },
+      { value: '136', label: 'Features' },
+      { value: 'MSLR', label: 'Benchmark' },
+    ],
+    tech: ['Python', 'XGBoost Ranker', 'BM25', 'TF-IDF', 'Information Retrieval'],
+    repo: 'https://github.com/addaarrssh/search-ranking-model',
+    demo: null,
+  },
   {
     id: 'study-buddy',
     title: 'AI Study Buddy',
@@ -214,7 +301,7 @@ export const projects = [
     accent: '#a78bfa',
     glyph: '❑',
     summary:
-      'Answers exam questions from your handwritten & typed notes using FAISS vector retrieval & Groq LLM API.',
+      'Answers exam questions from handwritten & typed notes using FAISS vector retrieval & Groq LLM API.',
     description:
       'Built an exam-focused RAG application that converts handwritten and typed PDF notes into a searchable knowledge base. Implemented document parsing, chunking, embedding generation, FAISS vector search, and retrieval-grounded response generation. Added previous-year-question analysis for targeted summaries and revision notes.',
     metrics: [
@@ -226,50 +313,22 @@ export const projects = [
     demo: null,
   },
   {
-    id: 'prahari',
-    title: 'PRAHARI',
-    subtitle: 'Digital Fraud Intelligence Platform',
-    year: 2026,
-    accent: '#ef4444',
-    glyph: '🛡',
-    summary: 'Client-side scam detector with a weighted-signal rule engine covering 10+ fraud families and a character-trigram Naive Bayes classifier.',
-    description: 'Built a client-side scam detection platform with two independent engines — a weighted-signal rule engine covering 10+ fraud families in English, Hindi and Hinglish, and a character-trigram Naive Bayes classifier. Scored by leave-one-out cross-validation over a 48-message corpus. ET AI Hackathon 2026.',
-    metrics: [{ value: 'Naive Bayes', label: 'Classifier' }, { value: '10+', label: 'Fraud families' }],
-    tech: ['JavaScript', 'Naive Bayes', 'Rule Engine', 'NLP'],
-    repo: 'https://github.com/addaarrssh/prahari',
-    demo: null,
-  },
-  {
     id: 'olist-sql',
     title: 'Olist E-Commerce Analytics',
     subtitle: 'SQL analytics on Brazilian marketplace',
     year: 2026,
-    accent: '#8b5cf6',
+    accent: '#06b6d4',
     glyph: '🛒',
-    summary: 'Modelled Brazil\'s Olist marketplace with multi-table joins, CTEs, views and window functions in PostgreSQL.',
-    description: 'End-to-end PostgreSQL analysis of Brazil\'s Olist marketplace across customers, orders, products, sellers, and reviews. Found São Paulo the largest market by GMV and quantified the link between late delivery and review score.',
-    metrics: [{ value: 'PostgreSQL', label: 'Database' }, { value: 'CTEs', label: 'Window Functions' }],
+    summary:
+      "Modelled Brazil's Olist marketplace with multi-table joins, CTEs, views and window functions in PostgreSQL.",
+    description:
+      "End-to-end PostgreSQL analysis of Brazil's Olist marketplace across customers, orders, products, sellers, and reviews. Found São Paulo the largest market by GMV and quantified the link between late delivery and review score.",
+    metrics: [
+      { value: 'PostgreSQL', label: 'Database' },
+      { value: 'CTEs', label: 'Window Functions' },
+    ],
     tech: ['PostgreSQL', 'Supabase', 'SQL', 'Data Modelling'],
     repo: 'https://github.com/addaarrssh/olist-sql-commerce-analytics',
-    demo: null,
-  },
-  {
-    id: 'ipl-winner-prediction',
-    title: 'IPL 2026 Winner Prediction',
-    subtitle: 'Cricket forecasting & simulation system',
-    year: 2026,
-    accent: '#f59e0b',
-    glyph: '🏏',
-    summary:
-      'XGBoost forecasting engine estimating match and season win probabilities from historical IPL data & trends.',
-    description:
-      'Developed a cricket forecasting system using XGBoost to estimate team win probabilities from historical IPL match data, current season trends, and simulation-based projections. Engineered match-level features including recent form, venue advantage, head-to-head record, and team balance. Deployed an interactive Streamlit dashboard.',
-    metrics: [
-      { value: 'XGBoost', label: 'Predictor' },
-      { value: 'Live', label: 'Simulations' },
-    ],
-    tech: ['Python', 'pandas', 'scikit-learn', 'XGBoost', 'Streamlit', 'Web Scraping'],
-    repo: 'https://github.com/addaarrssh/ipl-2026-prediction',
     demo: null,
   },
   {
@@ -292,22 +351,22 @@ export const projects = [
     demo: null,
   },
   {
-    id: 'stock-anomaly-detector',
-    title: 'Stock Anomaly Detector',
-    subtitle: 'Market monitoring with Isolation Forest',
+    id: 'm5-forecasting',
+    title: 'M5 Walmart Sales Forecasting',
+    subtitle: 'Daily demand forecasting on time-ordered splits',
     year: 2026,
-    accent: '#34d399',
-    glyph: '📈',
+    accent: '#f59e0b',
+    glyph: '📊',
     summary:
-      'Detects unusual trading volume and price spikes in NSE-listed stocks using unsupervised Isolation Forests.',
+      'Kaggle M5 Forecasting predicting daily Walmart sales with lag, rolling-window, and calendar features, comparing Prophet vs XGBoost.',
     description:
-      'Developed a market monitoring app using Isolation Forest to detect unusual price and volume behavior in NSE-listed stocks from multi-year OHLCV data. Engineered anomaly features such as daily return, intraday range, and volume ratio without requiring labeled event data. Visualized in an interactive Streamlit dashboard.',
+      'Kaggle M5 Forecasting project predicting daily Walmart sales from demand history, calendar events, and prices. Engineers lag/rolling-window/calendar/price features, compares Prophet, XGBoost, and a sequence-style baseline on time-ordered splits, and explicitly guards against time-series leakage.',
     metrics: [
-      { value: 'Isolation Forest', label: 'ML Model' },
-      { value: 'NSE', label: 'OHLCV Data' },
+      { value: 'Prophet', label: 'Time-Series' },
+      { value: 'XGBoost', label: 'Predictor' },
     ],
-    tech: ['Python', 'pandas', 'scikit-learn', 'yfinance', 'Streamlit', 'Matplotlib'],
-    repo: 'https://github.com/addaarrssh/stock-anomaly-detector',
+    tech: ['Python', 'pandas', 'Prophet', 'XGBoost', 'Time-Series Forecasting'],
+    repo: 'https://github.com/addaarrssh/m5-walmart-sales-forecasting',
     demo: null,
   },
 ]

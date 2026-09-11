@@ -8,6 +8,7 @@ import {
   skillGroups,
   toolbelt,
   learningNow,
+  competitionsAndLeadership,
 } from '../../../data/portfolio'
 
 /* ==========================================================================
@@ -272,6 +273,12 @@ function About() {
       <p className="mt-1 text-[13px] italic">
         {education.degree} &middot; CGPA {education.cgpa}
       </p>
+      {education.coursework && (
+        <p className="mt-1.5 text-[12.5px]">
+          <span className="showcase-display text-[12.5px]">Coursework: </span>
+          {education.coursework}
+        </p>
+      )}
       <p className="mt-2">{education.note}</p>
 
       <Rule />
@@ -317,7 +324,32 @@ function Experience() {
         {education.degree} &middot; {education.startYear}&ndash;{education.endYear} &middot; CGPA{' '}
         {education.cgpa}
       </p>
+      {education.coursework && (
+        <p className="mt-1.5 text-[12.5px]">
+          <span className="showcase-display text-[12.5px]">Coursework: </span>
+          {education.coursework}
+        </p>
+      )}
       <p className="mt-2">{education.note}</p>
+
+      {competitionsAndLeadership && (
+        <>
+          <Rule />
+          <h3 className="showcase-display text-[19px]">Competitions & Leadership</h3>
+          <div className="mt-2.5 space-y-2">
+            {competitionsAndLeadership.competitions.map((c, idx) => (
+              <p key={idx} className="text-[13px]">
+                <span className="showcase-display text-[13px]">{c.title}</span> &mdash; {c.detail}
+              </p>
+            ))}
+            {competitionsAndLeadership.leadership.map((l, idx) => (
+              <p key={idx} className="text-[13px]">
+                <span className="showcase-display text-[13px]">{l.role} ({l.org})</span> &mdash; {l.detail}
+              </p>
+            ))}
+          </div>
+        </>
+      )}
     </>
   )
 }
@@ -385,6 +417,22 @@ function Contact() {
           {profile.email}
         </a>
       </p>
+      {profile.phone && (
+        <p className="mt-1.5">
+          <span className="showcase-display text-[13px]">Phone: </span>
+          <a href={`tel:${profile.phone.replace(/\s+/g, '')}`} className="underline" style={{ color: LINK }}>
+            {profile.phone}
+          </a>
+        </p>
+      )}
+      {profile.linkedin && (
+        <p className="mt-1.5">
+          <span className="showcase-display text-[13px]">LinkedIn: </span>
+          <a href={profile.linkedin} target="_blank" rel="noreferrer" className="underline" style={{ color: LINK }}>
+            {profile.linkedin.replace('https://', '')}
+          </a>
+        </p>
+      )}
       {profile.github && (
         <p className="mt-1.5">
           <span className="showcase-display text-[13px]">GitHub: </span>

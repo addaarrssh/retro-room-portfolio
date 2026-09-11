@@ -56,6 +56,11 @@ export default function AboutApp() {
         <div className="text-sm font-semibold text-current">{education.institution}</div>
         <div className="text-xs opacity-60">{education.degree} ({education.startYear} - {education.endYear})</div>
         <div className="mt-2 text-xs text-amber-400 font-medium">CGPA: {education.cgpa}</div>
+        {education.coursework && (
+          <div className="mt-1 text-[11px] opacity-80">
+            <span className="text-emerald-400 font-semibold">Coursework:</span> {education.coursework}
+          </div>
+        )}
         <p className="mt-2 text-[11px] opacity-60 italic">{education.note}</p>
       </div>
 
