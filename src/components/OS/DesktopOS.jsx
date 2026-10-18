@@ -179,8 +179,6 @@ export default function DesktopOS({
     onPendingHandled?.()
   }, [pendingApp, open, onPendingHandled])
 
-  if (!powered) return null
-
   const openApp = (app) => {
     setStartOpen(false)
     open(app)
@@ -203,6 +201,7 @@ export default function DesktopOS({
   /* Handles mouse scroll wheel, 2-finger trackpad swipes, and 2-finger touch gestures
      inside the virtual display with passive: false override. */
   useEffect(() => {
+    if (!powered) return
     let touchStartY = 0
 
     const findScrollable = (mx, my, screenEl) => {
@@ -290,7 +289,9 @@ export default function DesktopOS({
       window.removeEventListener('touchstart', handleTouchStart)
       window.removeEventListener('touchmove', handleTouchMove)
     }
-  }, [])
+  }, [powered])
+
+  if (!powered) return null
 
   return (
     <OSThemeContext.Provider value={OS_WIN95}>
