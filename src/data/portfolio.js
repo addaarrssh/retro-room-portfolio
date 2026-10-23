@@ -45,7 +45,7 @@ export const education = {
   degree: 'B.Tech, Production and Industrial Engineering',
   startYear: 2024,
   endYear: 2028,
-  cgpa: '7.45 / 10',
+  cgpa: '7.45',
   location: 'Jamshedpur, Jharkhand',
   coursework: 'Operations Research, Engineering Statistics, Production Management, Engineering Economics',
   note: 'Rigorous quantitative foundation: Operations Research, Engineering Statistics, Production Management, and Engineering Economics feed directly into optimization, loss functions, and credit risk modeling.',
