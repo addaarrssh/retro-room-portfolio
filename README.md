@@ -1,6 +1,6 @@
 # 🕹️ 3D Interactive Retro Room Developer Portfolio
 
-[![Live Demo](https://img.shields.io/badge/Live_Demo-retro--room--portfolio.vercel.app-purple?style=for-the-badge&logo=vercel)](https://retro-room-portfolio.vercel.app)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-addaarrssh.vercel.app-purple?style=for-the-badge&logo=vercel)](https://addaarrssh.vercel.app)
 [![Built with React](https://img.shields.io/badge/React-19.0-blue?style=for-the-badge&logo=react)](https://react.dev/)
 [![Three.js](https://img.shields.io/badge/Three.js-R3F-black?style=for-the-badge&logo=three.js)](https://threejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?style=for-the-badge&logo=vite)](https://vitejs.dev/)
@@ -9,7 +9,7 @@ An immersive, interactive 3D Retro Room Developer Portfolio built for **Adarsh S
 
 Inspired by classic workstation aesthetics and modern 3D web design, this portfolio immerses visitors in a detailed 3D retro office room complete with an interactive CRT computer, virtual operating system, live ambient synthesizers, and mini-games.
 
-👉 **[Experience the Live Web App](https://retro-room-portfolio.vercel.app)**
+👉 **[Experience the Live Web App](https://addaarrssh.vercel.app)**
 
 ---
 
@@ -85,7 +85,7 @@ Inspired by classic workstation aesthetics and modern 3D web design, this portfo
 
 **Adarsh Sahu**  
 *Machine Learning & Data Science Engineer*  
-- **Portfolio**: [retro-room-portfolio.vercel.app](https://retro-room-portfolio.vercel.app)
+- **Portfolio**: [addaarrssh.vercel.app](https://addaarrssh.vercel.app)
 - **GitHub**: [@addaarrssh](https://github.com/addaarrssh)
 
 ---
