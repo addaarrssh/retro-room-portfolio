@@ -9,9 +9,9 @@ export const profile = {
   avatar: '/avatar.jpg',
   role: 'Data Science | Analytics | Applied Machine Learning',
   positioning:
-    'Production and Industrial Engineering undergraduate at NIT Jamshedpur applying machine learning, statistics, and operations research to high-impact operational problems — credit risk, transit forecasting, search ranking, and fraud detection — with an emphasis on rigorous evaluation and measurable business return.',
+    'Student at NIT Jamshedpur applying machine learning, statistics, and operations research to high-impact operational problems — credit risk, transit forecasting, search ranking, and fraud detection — with an emphasis on rigorous evaluation and measurable business return.',
   summary:
-    'Production and Industrial Engineering undergraduate at NIT Jamshedpur applying machine learning, statistics, and operations research to high-impact operational problems — credit risk, transit forecasting, search ranking, and fraud detection. Currently interning at OA Helper building campus acquisition channels nationwide.',
+    'Student at NIT Jamshedpur applying machine learning, statistics, and operations research to high-impact operational problems — credit risk, transit forecasting, search ranking, and fraud detection. Currently interning at OA Helper building campus acquisition channels nationwide.',
   location: 'Jamshedpur, Jharkhand, India',
   phone: '92040 88891',
   email: 'adarshprivate678@gmail.com',
@@ -42,7 +42,7 @@ export const hardware = [
 export const education = {
   institution: 'National Institute of Technology Jamshedpur',
   shortName: 'NIT Jamshedpur',
-  degree: 'B.Tech, Production and Industrial Engineering',
+  degree: 'B.Tech',
   startYear: 2024,
   endYear: 2028,
   cgpa: '7.45',
@@ -162,7 +162,7 @@ export const timeline = [
   },
   {
     year: '2024 – 2028',
-    title: 'B.Tech, Production & Industrial Engineering',
+    title: 'B.Tech, NIT Jamshedpur',
     org: 'NIT Jamshedpur',
     body: 'Operations Research, Engineering Statistics, Production Management, and Engineering Economics coursework. Optimization and statistical theory feed directly into quantitative machine learning workflows.',
   },
@@ -200,7 +200,7 @@ export const principles = [
 ]
 
 export const aboutParagraphs = [
-  'Production and Industrial Engineering undergraduate at NIT Jamshedpur applying machine learning, statistics, and operations research to high-impact operational problems — credit risk, transit forecasting, search ranking, and fraud detection — with an emphasis on rigorous evaluation and measurable business return.',
+  'Student at NIT Jamshedpur applying machine learning, statistics, and operations research to high-impact operational problems — credit risk, transit forecasting, search ranking, and fraud detection — with an emphasis on rigorous evaluation and measurable business return.',
   'I work end to end: framing the problem, engineering features, auditing for data leakage, choosing evaluations that can actually fail, and translating model outputs into clear business decisions. Currently interning at OA Helper, I build campus acquisition channels nationwide while working directly with the product team on user-acquisition strategy.',
   'That discipline shows up across all my work: Collections Intelligence decouples Willingness from Ability to Pay across 20,000 delinquent borrowers, delivering an INR 36.97 Crore cash recovery uplift under 30% call capacity constraints. RailCross evaluates on unseen holdout crossings with an UNKNOWN abstention band reaching ~90% accuracy on decided cases. The search ranker is evaluated on NDCG and MRR, and PRAHARI operates with dual client-side engines for zero privacy leakage.',
 ]

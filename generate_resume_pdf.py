@@ -151,7 +151,7 @@ def build_pdf(filename):
 
     # 2. Education
     add_section("EDUCATION")
-    edu_left = Paragraph("<b>National Institute of Technology Jamshedpur</b><br/><font color='#475569'>B.Tech in Production and Industrial Engineering &nbsp;|&nbsp; <b>CGPA: 7.45/10</b></font>", body_style)
+    edu_left = Paragraph("<b>National Institute of Technology Jamshedpur</b><br/><font color='#475569'>Bachelor of Technology (B.Tech) &nbsp;|&nbsp; <b>CGPA: 7.45/10</b></font>", body_style)
     edu_right = Paragraph("<b>Jamshedpur, Jharkhand</b><br/><b>2024 &ndash; 2028</b>", project_date_style)
     
     t_edu = Table([[edu_left, edu_right]], colWidths=[380, 160])
