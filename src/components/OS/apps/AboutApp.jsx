@@ -1,5 +1,5 @@
-import { profile, education, stats, skillGroups, toolbelt, learningNow, principles, aboutParagraphs } from '../../../data/portfolio'
-import { User, GraduationCap, Code2, Award, Lightbulb, Download } from 'lucide-react'
+import { profile, education, stats, skillGroups, principles, aboutParagraphs } from '../../../data/portfolio'
+import { GraduationCap, Code2, Lightbulb, Download } from 'lucide-react'
 
 export default function AboutApp() {
   return (
@@ -18,14 +18,35 @@ export default function AboutApp() {
               <p className="text-xs text-emerald-400 font-semibold">{profile.role}</p>
             </div>
           </div>
-          <a
-            href="/Adarsh_Sahu_Resume.pdf"
-            download="Adarsh_Sahu_Resume.pdf"
-            className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow transition transform active:scale-95 cursor-pointer"
-          >
-            <Download size={13} />
-            <span>Download Resume</span>
-          </a>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <a
+              href="/Adarsh_Sahu_Resume_DataScience.pdf"
+              download="Adarsh_Sahu_Resume_DataScience.pdf"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow transition transform active:scale-95 cursor-pointer"
+              title="Download primary Data Science & ML Resume"
+            >
+              <Download size={13} />
+              <span>Data Science CV</span>
+            </a>
+            <a
+              href="/Adarsh_Sahu_Resume_Operations.pdf"
+              download="Adarsh_Sahu_Resume_Operations.pdf"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-current/10 hover:bg-current/20 text-current text-xs font-semibold rounded-lg border border-current/20 transition cursor-pointer"
+              title="Download Operations Research Resume"
+            >
+              <Download size={12} />
+              <span>Operations CV</span>
+            </a>
+            <a
+              href="/Adarsh_Sahu_Resume_FMCG.pdf"
+              download="Adarsh_Sahu_Resume_FMCG.pdf"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-current/10 hover:bg-current/20 text-current text-xs font-semibold rounded-lg border border-current/20 transition cursor-pointer"
+              title="Download FMCG Supply Chain (TCPL) Resume"
+            >
+              <Download size={12} />
+              <span>FMCG CV</span>
+            </a>
+          </div>
         </div>
         <p className="text-xs opacity-90 mt-2">{profile.positioning}</p>
       </div>

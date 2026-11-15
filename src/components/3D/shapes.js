@@ -1,4 +1,12 @@
-import { BoxGeometry, BufferAttribute, BufferGeometry, ExtrudeGeometry, Shape, Vector2 } from 'three'
+import {
+  BoxGeometry,
+  BufferAttribute,
+  BufferGeometry,
+  ExtrudeGeometry,
+  Shape,
+  Vector2,
+  PlaneGeometry,
+} from 'three'
 
 /* ==========================================================================
    shapes.js — profile builders for turned and moulded objects.
@@ -443,4 +451,38 @@ function hexToRgb(hex) {
   // three reads vertex colours as linear, so convert or the sweep comes out
   // noticeably paler than the hex it was given.
   return srgb.map((v) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)))
+}
+
+/* ==========================================================================
+   leafGeometry — one broad leaf, as a bent sheet rather than a squashed ball.
+
+   The plant used to be made of flattened spheres. From across the room that
+   reads as a cluster of green lozenges: no tip, no stalk end, no fold, and the
+   same thickness everywhere. A real leaf is a thin sheet with three features,
+   and each one is a line of the loop below:
+
+   · an OUTLINE that swells quickly from the stalk, is widest about a third of
+     the way along, and tapers to a point;
+   · a FOLD along the midrib, so the two halves catch the light differently —
+     that crease is what makes it read as a leaf at any distance;
+   · a DROOP toward the tip under its own weight.
+
+   Local space: the stalk end is at the origin, the leaf runs along +Y for one
+   unit and is at most one unit wide in X. +Z is the underside, so droop is
+   positive Z and the fold lifts the edges toward -Z.
+   ========================================================================== */
+export function leafGeometry({ segL = 14, segW = 6, droop = 0.34, fold = 0.32 } = {}) {
+  const geo = new PlaneGeometry(1, 1, segW, segL)
+  const pos = geo.attributes.position
+
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i)
+    const t = pos.getY(i) + 0.5
+    const w = Math.pow(Math.sin(Math.PI * Math.pow(t, 0.7)), 0.8)
+    const nx = x * w
+    pos.setXYZ(i, nx, t, droop * t * t - fold * Math.abs(nx))
+  }
+
+  geo.computeVertexNormals()
+  return geo
 }

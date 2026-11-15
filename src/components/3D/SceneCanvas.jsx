@@ -1,16 +1,16 @@
-import { Suspense, useEffect, useRef } from 'react'
-import { Canvas, useThree } from '@react-three/fiber'
-import { AdaptiveDpr, Environment, Lightformer, Preload } from '@react-three/drei'
+import { Suspense, useEffect, useRef, useState } from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { Environment, Lightformer, PerformanceMonitor, Preload } from '@react-three/drei'
 import {
   Bloom,
   BrightnessContrast,
-  ChromaticAberration,
   EffectComposer,
-  HueSaturation,
+  N8AO,
+  ToneMapping,
   Vignette,
 } from '@react-three/postprocessing'
-import { BlendFunction, KernelSize } from 'postprocessing'
-import { ACESFilmicToneMapping, PCFShadowMap, Vector2 } from 'three'
+import { KernelSize, ToneMappingMode } from 'postprocessing'
+import { ACESFilmicToneMapping, PCFShadowMap } from 'three'
 import CameraRig, { VIEWS } from './CameraRig'
 import RoomScene from './RoomScene'
 import CRTMonitor from './CRTMonitor'
@@ -67,7 +67,7 @@ const LIGHTING = {
     ambient: '#9aa0c0',
     ambientI: 0.16,
     hemi: ['#3a3850', '#12101a', 0.14],
-    keyI: 1.1,
+    keyI: 1.7,
     envI: 0.5,
     rimI: 0.8,
     exposure: 1.05,
@@ -110,6 +110,7 @@ export default function SceneCanvas({
   pendingApp,
   onPendingHandled,
   onReady,
+  entered = true,
   windowManager,
   muted,
   onToggleMute,
@@ -122,6 +123,17 @@ export default function SceneCanvas({
   // the corners of the desktop and bloom would smear white UI text.
   const zoomed = viewState === 'MONITOR_ZOOMED'
 
+  /* Set once, when the visitor's machine proves it cannot hold the frame rate.
+
+     The scene is tuned on a fast laptop, and most people who open a portfolio
+     link are not on one: an office desktop with integrated graphics, a
+     four-year-old ultrabook on battery. On those the two things that cost the
+     most are fill rate (pixels x passes) and the post stack, so the low tier
+     drops to dpr 1 and removes the composer entirely. It never climbs back —
+     a scene that flips quality up and down as load changes is more distracting
+     than one that settles a notch lower and stays there. */
+  const [low, setLow] = useState(false)
+
   return (
     <Canvas
       /* Capped at 1.5 rather than 2. On a Retina panel dpr 2 means rendering
@@ -130,11 +142,15 @@ export default function SceneCanvas({
          in every per-pixel cost, and with bloom and a vignette over the top
          the difference is not visible. AdaptiveDpr drops it further if the
          machine still struggles. */
-      dpr={[1, 1.5]}
+      dpr={low ? 1 : [1, 1.5]}
       shadows={{ type: PCFShadowMap }}
       gl={{
-        // MSAA is handled by the composer, which is where the final image is.
-        antialias: false,
+        /* On, for the low tier. While the composer is mounted the scene is
+           drawn into the composer's own multisampled buffer and this setting
+           only covers the final full-screen quad, which costs nothing. When
+           the low tier unmounts the composer, this is the only antialiasing
+           left — and without it every edge of the desk is a staircase. */
+        antialias: true,
         powerPreference: 'high-performance',
         alpha: false,
         stencil: false,
@@ -184,19 +200,23 @@ export default function SceneCanvas({
           shadow camera sized to the room is a single extra pass over the ~54
           casters — cheap for the thing that gives every object its form. */}
       <directionalLight
-        position={[5.2, 3.6, 2.4]}
+        position={[3.4, 5.4, 3.6]}
         color={isLight ? '#ffffff' : '#ffe9d0'}
         intensity={isLight ? L.keyI : lampOn ? L.keyI : 0.8}
         castShadow
-        shadow-mapSize={[3072, 3072]}
+        shadow-mapSize={low ? [1024, 1024] : [2048, 2048]}
         shadow-bias={-0.0006}
         shadow-normalBias={0.02}
         // Softness comes from the radius; r185's PCF does the Vogel disk.
-        shadow-radius={1.1}
-        shadow-camera-left={-5}
-        shadow-camera-right={5}
-        shadow-camera-top={5}
-        shadow-camera-bottom={-5}
+        shadow-radius={2.2}
+        /* Fitted to the furniture (plant to chair, ~4.4m) rather than an 8m
+           square: the same 2048 map now spends ~2.5mm per texel instead of
+           4mm, which is the difference between a mug having a shadow and a
+           mug having a smudge. */
+        shadow-camera-left={-2.9}
+        shadow-camera-right={2.9}
+        shadow-camera-top={2.9}
+        shadow-camera-bottom={-2.9}
         shadow-camera-near={0.5}
         shadow-camera-far={16}
       />
@@ -268,6 +288,7 @@ export default function SceneCanvas({
           pendingApp={pendingApp}
           onPendingHandled={onPendingHandled}
           onScreenFocus={onScreenFocus}
+          entered={entered}
         />
 
         {/* Compile every material up front so the first camera move does not
@@ -281,31 +302,110 @@ export default function SceneCanvas({
           textures suspend, and an unbounded suspend in here takes the whole
           canvas with it — no renderer, no first frame, and the loading screen
           never lifts. */}
-      <Suspense fallback={null}>
-        <EffectComposer multisampling={0} enableNormalPass={false}>
-          <Bloom
-            intensity={zoomed ? Math.min(0.28, L.bloom) : L.bloom}
-            luminanceThreshold={zoomed ? 0.9 : L.bloomThreshold}
-            luminanceSmoothing={0.3}
-            kernelSize={KernelSize.MEDIUM}
-            mipmapBlur
-          />
-          <HueSaturation saturation={0} />
-          <BrightnessContrast brightness={0.0} contrast={zoomed ? 0.02 : L.contrast} />
-          <ChromaticAberration
-            offset={new Vector2(zoomed ? 0.0002 : 0.0005, zoomed ? 0.0002 : 0.0005)}
-            blendFunction={BlendFunction.NORMAL}
-            radialModulation
-            modulationOffset={0.35}
-          />
-          <Vignette eskil={false} offset={0.32} darkness={zoomed ? 0.3 : L.vignette} />
-        </EffectComposer>
-      </Suspense>
+      {/* Three effects, down from five. HueSaturation was running at a
+          saturation of 0 — a full-screen pass that changed nothing — and the
+          chromatic aberration was offset by 0.0005, under a pixel at any size
+          the canvas is ever drawn. Both cost a texture fetch per pixel per
+          frame for no visible result.
 
-      <AdaptiveDpr pixelated={false} />
+          ToneMapping is here because the composer switches the RENDERER's
+          tone mapping off while it is mounted (it has to: it works in linear
+          HDR and maps at the end). Nothing in the old chain mapped at the
+          end, so the ACES set in onCreated never applied and highlights
+          clipped straight to white. With it in the chain the image is the
+          same with or without the composer, which is what lets the low tier
+          drop the post stack without the room changing colour. */}
+      {!low && (
+        <Suspense fallback={null}>
+          {/* 4x MSAA. It was 0, with antialias also off on the renderer, so
+              nothing in the scene was antialiased at all: the monitor's edges,
+              the desk and the chair arms all crawled as the camera drifted.
+              Affordable now that the shadow pass no longer runs every frame. */}
+          <EffectComposer multisampling={4} enableNormalPass={false}>
+            {/* Ambient occlusion: the contact darkening where a mug meets a
+                coaster, a keycap meets the board, a drawer meets its frame.
+                The shadow map cannot supply it — one directional light only
+                shades what faces away from it — and without it every prop
+                looks pasted onto the desk rather than standing on it.
+                Half resolution with depth-aware upsampling is indistinguishable
+                at this scale and a quarter of the cost; the low tier drops the
+                whole composer, AO included. */}
+            <N8AO
+              aoRadius={0.22}
+              distanceFalloff={0.6}
+              intensity={zoomed ? 1.2 : 2.4}
+              quality="performance"
+              halfRes
+              depthAwareUpsampling
+              color="#1a140f"
+            />
+            <Bloom
+              intensity={zoomed ? Math.min(0.28, L.bloom) : L.bloom}
+              luminanceThreshold={zoomed ? 0.9 : L.bloomThreshold}
+              luminanceSmoothing={0.3}
+              kernelSize={KernelSize.SMALL}
+              mipmapBlur
+            />
+            <BrightnessContrast brightness={0.0} contrast={zoomed ? 0.02 : L.contrast} />
+            <Vignette eskil={false} offset={0.32} darkness={zoomed ? 0.3 : L.vignette} />
+            <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+          </EffectComposer>
+        </Suspense>
+      )}
+
+      <StaticShadows token={`${appearance}|${era}|${lampOn}|${low}`} />
+      <PerformanceMonitor
+        ms={300}
+        iterations={6}
+        bounds={() => [38, 55]}
+        flipflops={1}
+        onDecline={() => setLow(true)}
+        onFallback={() => setLow(true)}
+      />
       <ReadySignal onReady={onReady} />
     </Canvas>
   )
+}
+
+/**
+ * Renders the shadow map a few times, then stops.
+ *
+ * Nothing that casts a shadow in this room moves: the desk, the chair and the
+ * machine are fixed and so is the light. three.js does not know that, so by
+ * default it re-renders every caster into the shadow map on every frame —
+ * for this scene that was roughly a third of all draw calls, spent redrawing
+ * an identical image sixty times a second. Freezing it is the single largest
+ * saving available here and costs nothing visible.
+ *
+ * `token` is anything that changes what the shadows should look like
+ * (appearance, era, the lamp). When it changes the map is refreshed for a
+ * short burst — a burst rather than one frame because materials and generated
+ * textures finish compiling over the first several frames, and a map captured
+ * on frame one can be missing objects that had not drawn yet.
+ */
+function StaticShadows({ token }) {
+  const gl = useThree((s) => s.gl)
+  const pending = useRef(0)
+
+  useEffect(() => {
+    gl.shadowMap.autoUpdate = false
+    return () => {
+      gl.shadowMap.autoUpdate = true
+    }
+  }, [gl])
+
+  useEffect(() => {
+    pending.current = 45
+  }, [token])
+
+  useFrame(() => {
+    if (pending.current > 0) {
+      pending.current -= 1
+      gl.shadowMap.needsUpdate = true
+    }
+  })
+
+  return null
 }
 
 /** Exposure lives on the renderer, so it needs applying imperatively. */

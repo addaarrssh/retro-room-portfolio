@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { LogOut, Moon, Sun, Volume2, VolumeX } from 'lucide-react'
+import { Download, LogOut, Moon, Sun, Volume2, VolumeX } from 'lucide-react'
 import { profile } from '../../data/portfolio'
 import TypewriterText from './TypewriterText'
 
@@ -82,7 +82,7 @@ export default function Overlay({
                 text={profile.name}
                 speed={40}
                 delay={200}
-                playSound={true}
+                playSound={false}
                 cursorChar="_"
               />
             </Slab>
@@ -91,24 +91,35 @@ export default function Overlay({
                 text={profile.role}
                 speed={30}
                 delay={200 + profile.name.length * 40 + 150}
-                playSound={true}
+                playSound={false}
                 cursorChar="_"
               />
             </Slab>
 
-            {/* Clock and controls share one slab, so the panel stays a column
-                of three rather than sprawling. */}
+            {/* Clock and appearance share one slab */}
             <div className="pointer-events-auto flex items-center gap-1 animate-fade-in" style={{ animationDelay: '1.2s' }}>
               <Slab tabular>{clock}</Slab>
-              <SlabButton label={muted ? 'Unmute' : 'Mute'} onClick={onToggleMute}>
-                {muted ? <VolumeX size={12} /> : <Volume2 size={12} />}
-              </SlabButton>
               <SlabButton
                 label={isLight ? 'Dark appearance' : 'Light appearance'}
                 onClick={onToggleAppearance}
               >
                 {isLight ? <Moon size={12} /> : <Sun size={12} />}
               </SlabButton>
+            </div>
+
+            {/* The shortcuts. Some visitors have ninety seconds and want a
+                document, not an experience — a recruiter with forty tabs open
+                is one of them. These four are everything they came for, and
+                they are reachable from the first frame without sitting down at
+                the desk. Anchors, so the room's click-to-enter ignores them. */}
+            <div className="pointer-events-auto mt-1 flex items-center gap-1 animate-fade-in" style={{ animationDelay: '1.6s' }}>
+              <SlabLink href="/Adarsh_Sahu_Resume_DataScience.pdf" download="Adarsh_Sahu_Resume_DataScience.pdf" primary>
+                <Download size={12} />
+                <span>R&eacute;sum&eacute;</span>
+              </SlabLink>
+              {profile.linkedin && <SlabLink href={profile.linkedin}>LinkedIn</SlabLink>}
+              {profile.github && <SlabLink href={profile.github}>GitHub</SlabLink>}
+              {profile.email && <SlabLink href={`mailto:${profile.email}`}>Email</SlabLink>}
             </div>
           </>
         )}
@@ -177,6 +188,23 @@ function Slab({ children, tabular }) {
     >
       {children}
     </span>
+  )
+}
+
+function SlabLink({ children, href, download, primary }) {
+  const external = /^https?:/.test(href)
+  return (
+    <a
+      href={href}
+      download={download || undefined}
+      target={external ? '_blank' : undefined}
+      rel={external ? 'noreferrer' : undefined}
+      className={`inline-flex h-[26px] items-center gap-1.5 px-2.5 font-mono text-[12px] leading-none transition active:scale-95 ${
+        primary ? 'bg-white text-[#111] ring-1 ring-inset ring-[#111] hover:bg-zinc-200' : 'bg-[#111] text-white hover:bg-[#2a2a2a]'
+      }`}
+    >
+      {children}
+    </a>
   )
 }
 

@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import SceneCanvas from './components/3D/SceneCanvas'
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react'
 import Overlay from './components/UI/Overlay'
 import LoadingScreen from './components/UI/LoadingScreen'
 import FlatSite from './components/UI/FlatSite'
@@ -7,6 +6,15 @@ import PhotoMode from './components/UI/PhotoMode'
 import { useDevice } from './hooks/useDevice'
 import { useWindowManager } from './hooks/useWindowManager'
 import audio from './audio/AudioEngine'
+
+/* The 3D scene is its own chunk. three.js, the fibre renderer, drei and the
+   post-processing library are roughly a megabyte of JavaScript between them,
+   and they used to be in the same file as the BIOS screen — so on a slow
+   connection the visitor stared at a blank black page until all of it had
+   downloaded and parsed. Split out, the POST screen paints from a small first
+   chunk almost immediately and the scene loads behind it, which is the job a
+   loading screen is supposed to be doing in the first place. */
+const SceneCanvas = lazy(() => import('./components/3D/SceneCanvas'))
 
 /* ==========================================================================
    App — the root state machine.
@@ -31,7 +39,7 @@ export default function App() {
   const device = useDevice()
 
   const [viewState, setViewState] = useState('ROOM')
-  const [muted, setMuted] = useState(false)
+  const [muted, setMuted] = useState(true)
   const [ready, setReady] = useState(false)
   const [entered, setEntered] = useState(false)
 
@@ -82,11 +90,13 @@ export default function App() {
   }, [])
 
   /* Readiness is whichever comes first: the canvas reporting a painted frame,
-     or a wall-clock deadline. The deadline is not a nicety — a throttled or
+     or a wall-clock deadline. The deadline is a LAST RESORT, nine seconds, not
+     the 600ms it used to be — at 600ms it always won, so START appeared before
+     the scene existed and clicking it promptly showed an empty backdrop. The deadline is not a nicety — a throttled or
      backgrounded tab may deliver no frames at all, and without it the loading
      screen can stay up indefinitely on a scene that is actually finished. */
   useEffect(() => {
-    const id = window.setTimeout(() => setReady(true), 600)
+    const id = window.setTimeout(() => setReady(true), 9000)
     return () => window.clearTimeout(id)
   }, [])
 
@@ -127,6 +137,33 @@ export default function App() {
   })
 
   const transitionRef = useRef(null)
+
+  /* SCROLL GUARD — the fix for the monitor going black.
+
+     The desktop is DOM, projected onto the monitor by a CSS 3D transform
+     inside a wrapper that is `overflow: hidden`. Hidden overflow stops the
+     USER scrolling an element; it does not stop the BROWSER. Focusing an input
+     (the MS-DOS prompt, the contact form), tabbing to a link, or any
+     scrollIntoView makes the browser scroll that wrapper to bring the focused
+     element "into view" — and because the wrapper's content is a perspective
+     projection, a 25px scroll moves the desktop thousands of pixels off the
+     glass. The screen goes dark, every click lands on the room instead of the
+     desktop, and nothing recovers it short of a reload.
+
+     Nothing outside the desktop is ever meant to scroll, so any scroll on an
+     element that is not inside `[data-os-screen]` is put straight back. Scroll
+     events do not bubble, hence the capture phase. */
+  useEffect(() => {
+    const onScroll = (e) => {
+      const el = e.target
+      if (!el || el === document || !el.closest) return
+      if (el.closest('[data-os-screen]')) return
+      if (el.scrollTop !== 0) el.scrollTop = 0
+      if (el.scrollLeft !== 0) el.scrollLeft = 0
+    }
+    document.addEventListener('scroll', onScroll, true)
+    return () => document.removeEventListener('scroll', onScroll, true)
+  }, [])
 
   /* --------------------------------------------------------- transitions */
 
@@ -227,7 +264,7 @@ export default function App() {
         return
       }
       // Enter from the room view is the keyboard equivalent of clicking the CRT.
-      if (e.key === 'Enter' && viewState === 'ROOM') {
+      if (e.key === 'Enter' && viewState === 'ROOM' && entered) {
         if (tag !== 'BUTTON' && !isInput) {
           e.preventDefault()
           zoomToMonitor()
@@ -236,57 +273,12 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [viewState, zoomToRoom, zoomToMonitor, cycleTheme, photoMode])
+  }, [viewState, zoomToRoom, zoomToMonitor, cycleTheme, photoMode, entered])
 
-  /* Tactile click on empty space only.
-     Controls that make their own sound — window chrome, taskbar buttons, the
-     3D props — mark the event as handled. Without that check every button
-     press fired two or three overlapping clicks: one from the control, one
-     from here, and often a focus click on top. */
-  /* A click is TWO sounds, not one: the switch loading on the way down and
-     the spring returning on the way up. Firing a single blip on pointerdown
-     is what makes an interface sound like a web page rather than hardware,
-     and the gap between the two is what carries how long you held it. */
-  useEffect(() => {
-    const isControl = (e) => e.target.closest?.('button, a, input, textarea, [data-click-sound]')
-    const onDown = (e) => {
-      if (isControl(e)) return
-      audio.mouseDown()
-    }
-    const onUp = (e) => {
-      if (isControl(e)) return
-      audio.mouseUp()
-    }
-    window.addEventListener('pointerdown', onDown)
-    window.addEventListener('pointerup', onUp)
-    return () => {
-      window.removeEventListener('pointerdown', onDown)
-      window.removeEventListener('pointerup', onUp)
-    }
-  }, [])
-
-  /* Typing anywhere makes the keyboard on the desk sound. Bound at the window
-     because the desktop lives inside a 3D surface and never holds focus in
-     the way a normal page does. */
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return
-      audio.key()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
-
-  /* The one click that lets audio exist. Browsers will not start an
-     AudioContext without a real gesture, so this is where the engine wakes up
-     without autostarting background music — allowing visitors to toggle music manually. */
+  /* Entry gesture — enters the room and sets entered state */
   const enterRoom = useCallback(() => {
-    audio.unlock()
-    audio.setMuted(muted)
-    // The room tone starts here and runs for the rest of the visit.
-    audio.startAmbience()
     setEntered(true)
-  }, [muted])
+  }, [])
 
   /* "Click anywhere to begin" has to mean anywhere, so entry is bound to the
      whole stage rather than to the monitor mesh — the room is one big button.
@@ -309,6 +301,11 @@ export default function App() {
       const down = pressRef.current
       pressRef.current = null
       if (!down) return
+      /* The BIOS screen is a child of this stage, so the click that dismisses
+         it used to arrive here as well and fly the camera to the desk in the
+         same instant: anyone who clicked beside the START button skipped the
+         room entirely and landed at the monitor. */
+      if (!entered) return
       if (e.target.closest?.('button, a, input, textarea')) return
 
       const travelled = Math.hypot(e.clientX - down.x, e.clientY - down.y)
@@ -333,7 +330,7 @@ export default function App() {
         zoomToRoom()
       }
     },
-    [viewState, zoomToMonitor, zoomToRoom],
+    [viewState, zoomToMonitor, zoomToRoom, entered],
   )
 
   const toggleMute = useCallback(() => {
@@ -354,6 +351,7 @@ export default function App() {
       onPointerDown={onStagePointerDown}
       onPointerUp={onStagePointerUp}
     >
+      <Suspense fallback={null}>
       <SceneCanvas
         viewState={viewState}
         roomTheme={roomTheme}
@@ -372,11 +370,13 @@ export default function App() {
         onHoverProp={setHoveredProp}
         pendingApp={pendingApp}
         onPendingHandled={() => setPendingApp(null)}
+        entered={entered}
         onReady={() => setReady(true)}
         windowManager={windowManager}
         muted={muted}
         onToggleMute={toggleMute}
       />
+      </Suspense>
 
       {!photoMode && (
         <Overlay

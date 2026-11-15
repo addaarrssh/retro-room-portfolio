@@ -54,6 +54,13 @@ export const SCREEN = {
  * `px * distanceFactor / 400`. Deriving the factor instead of hard-coding it
  * means the desktop always fills the display exactly, whatever SCREEN.w becomes.
  */
+/**
+ * Eye height while seated. A little BELOW the centre of the glass, because the
+ * casing is not symmetric — the chin under the display is deeper than the lip
+ * above it — so centring the camera on the glass crops the chin first.
+ */
+export const SEAT_Y = SCREEN.y - 0.045
+
 export const SCREEN_HTML_FACTOR = (400 * SCREEN.w) / SCREEN_PX.w
 
 /**
@@ -65,12 +72,14 @@ export const SCREEN_HTML_FACTOR = (400 * SCREEN.w) / SCREEN_PX.w
  * full-screen web page, not at a screen in a room, which throws away the whole
  * premise about two seconds after arriving.
  *
- * 1.24 puts the lit area at roughly 85% of the frame height, which leaves the
- * beige casing, the bezel and the power LED visible all the way around — the
- * framing the reference site settles into, and what PROJECT_REQUIREMENTS asks
- * for in rule 1.
+ * 1.34 puts the lit area at roughly 75% of the frame height. The casing is
+ * 1.25x the height of the glass, so that is the tightest framing that still
+ * shows the whole beige case, chin included (PROJECT_REQUIREMENTS rule 1).
+ * It was 1.48, which shrank a 1024x768 desktop to about two thirds of the
+ * window: 12px interface text landed near 9px and was not comfortably
+ * readable on a laptop.
  */
-export function monitorViewDistance(fovDeg, aspect, margin = 1.48) {
+export function monitorViewDistance(fovDeg, aspect, margin = 1.34) {
   const halfFov = Math.tan((fovDeg * Math.PI) / 180 / 2)
   const fitHeight = SCREEN.h / (2 * halfFov)
   const fitWidth = SCREEN.w / (2 * halfFov * aspect)

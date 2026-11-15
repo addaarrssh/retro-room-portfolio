@@ -58,6 +58,13 @@ const PANEL_FACE_Z = PANEL.z + PANEL.d / 2
     display behind the plastic. */
 const CASING_DEPTH = 0.44
 
+/* A tube monitor is not a box. It is a shallow front shell holding the glass,
+   and behind that a smaller housing that steps in and tapers back around the
+   neck of the tube. Modelled as one 0.44m box it looked like a flat panel
+   that had been extruded — from the room's three-quarter view the side was a
+   blank slab. Splitting it gives the stepped profile everybody recognises. */
+const SHELL_DEPTH = 0.17
+
 /* ==========================================================================
    The proportions of a 1990s CRT, which are not the proportions of a screen.
 
@@ -117,6 +124,7 @@ export default function CRTMonitor({
   pendingApp,
   onPendingHandled,
   onScreenFocus,
+  entered = true,
 }) {
   const [hovered, setHovered] = useState(false)
   const bezelRef = useRef()
@@ -133,6 +141,17 @@ export default function CRTMonitor({
   /* Whether a hover is allowed to fly the camera in. Cleared on each trip,
      restored when the pointer genuinely leaves the monitor. See handleOver. */
   const armed = useRef(true)
+
+  /* When the visitor got past the BIOS screen. The START button sits in the
+     middle of the window — directly over the monitor — so the pointer is
+     ALREADY on the monitor the moment the room appears, and the first pixel of
+     mouse movement used to count as a hover and fly them straight in. They
+     never saw the room. For the first moments after entry a hover only
+     disarms; the pointer has to leave the monitor and come back deliberately. */
+  const enteredAt = useRef(0)
+  useEffect(() => {
+    if (entered) enteredAt.current = performance.now()
+  }, [entered])
 
   useEffect(() => {
     return () => {
@@ -239,6 +258,11 @@ export default function CRTMonitor({
     if (!interactive) return
     setHovered(true)
 
+    if (!entered || performance.now() - enteredAt.current < 2200) {
+      armed.current = false
+      return
+    }
+
     if (!armed.current) return
     armed.current = false
     onClick?.()
@@ -278,10 +302,10 @@ export default function CRTMonitor({
               than by eye, and the depth is subtracted explicitly. */}
           <RoundedBox
             ref={bezelRef}
-            args={[CASING_W, CASING_H, CASING_DEPTH]}
-            radius={0.026}
-            smoothness={4}
-            position={[0, CASING_Y, PANEL_FACE_Z - 0.004 - CASING_DEPTH / 2]}
+            args={[CASING_W, CASING_H, SHELL_DEPTH]}
+            radius={0.034}
+            smoothness={5}
+            position={[0, CASING_Y, PANEL_FACE_Z - 0.004 - SHELL_DEPTH / 2]}
             castShadow
             receiveShadow
           >
@@ -310,6 +334,43 @@ export default function CRTMonitor({
               metalness={0}
             />
           </RoundedBox>
+          {/* Rear housing: stepped in from the shell, then a smaller cap
+              behind that, so the body narrows toward the back. */}
+          <RoundedBox
+            args={[CASING_W * 0.86, CASING_H * 0.84, 0.17]}
+            radius={0.05}
+            smoothness={5}
+            position={[0, CASING_Y + 0.01, PANEL_FACE_Z - SHELL_DEPTH - 0.07]}
+            castShadow
+          >
+            <meshStandardMaterial color="#d3cec2" roughness={0.66} roughnessMap={casePlastic} />
+          </RoundedBox>
+          <RoundedBox
+            args={[CASING_W * 0.62, CASING_H * 0.6, 0.14]}
+            radius={0.06}
+            smoothness={5}
+            position={[0, CASING_Y + 0.01, PANEL_FACE_Z - SHELL_DEPTH - 0.2]}
+            castShadow
+          >
+            <meshStandardMaterial color="#cbc6ba" roughness={0.7} />
+          </RoundedBox>
+
+          {/* The lip round the glass. Four beige strips, angled inward, so the
+              screen sits at the bottom of a shallow moulded well instead of
+              being printed on the front of the case. This is the single detail
+              that most separates a CRT from a flat panel. */}
+          {[
+            { pos: [0, SCREEN.y + SCREEN.h / 2 + 0.012, 0], size: [SCREEN.w + 0.05, 0.026, 0.012], rot: [0.5, 0, 0] },
+            { pos: [0, SCREEN.y - SCREEN.h / 2 - 0.012, 0], size: [SCREEN.w + 0.05, 0.026, 0.012], rot: [-0.5, 0, 0] },
+            { pos: [-SCREEN.w / 2 - 0.012, SCREEN.y, 0], size: [0.026, SCREEN.h + 0.05, 0.012], rot: [0, 0.5, 0] },
+            { pos: [SCREEN.w / 2 + 0.012, SCREEN.y, 0], size: [0.026, SCREEN.h + 0.05, 0.012], rot: [0, -0.5, 0] },
+          ].map((l, k) => (
+            <mesh key={k} position={[l.pos[0], l.pos[1], PANEL_FACE_Z + 0.001]} rotation={l.rot}>
+              <boxGeometry args={l.size} />
+              <meshStandardMaterial color="#c9c4b8" roughness={0.6} />
+            </mesh>
+          ))}
+
           {/* The dark recess the tube sits in.
 
               A CRT's glass is not flush with the plastic — it is sunk behind a
@@ -326,9 +387,9 @@ export default function CRTMonitor({
           {Array.from({ length: 8 }, (_, k) => (
             <mesh
               key={k}
-              position={[-0.3 + k * 0.085, CASING_Y + CASING_H / 2 - 0.006, PANEL_FACE_Z - 0.004 - CASING_DEPTH / 2]}
+              position={[-0.3 + k * 0.085, CASING_Y + 0.01 + (CASING_H * 0.84) / 2 + 0.0005, PANEL_FACE_Z - SHELL_DEPTH - 0.075]}
             >
-              <boxGeometry args={[0.04, 0.005, 0.3]} />
+              <boxGeometry args={[0.04, 0.003, 0.12]} />
               <meshStandardMaterial color="#22201b" roughness={0.8} />
             </mesh>
           ))}
@@ -357,10 +418,15 @@ export default function CRTMonitor({
           </group>
 
           {/* Horizontal 1995 PC Desktop Case Unit under Monitor (Resting flat on desk) */}
-          <group position={[0, 0.795, -0.1]}>
+          {/* Desk top is at 0.70 and the case is 0.146 tall, so its centre is
+              0.773 and its lid lands at 0.846 — 7mm under the monitor, which
+              the plinth below takes up. It was centred at 0.795, which left a
+              2cm gap of daylight under the case and sank the monitor 1.7cm
+              into its lid. */}
+          <group position={[0, 0.773, -0.14]}>
             {/* Main Beige Desktop Case Chassis */}
             <RoundedBox
-              args={[0.58, 0.15, 0.44]}
+              args={[0.86, 0.146, 0.46]}
               radius={0.012}
               smoothness={4}
               castShadow
@@ -376,13 +442,13 @@ export default function CRTMonitor({
             </RoundedBox>
 
             {/* Front Panel Inset Bezel Section */}
-            <mesh position={[0, 0, 0.221]}>
-              <planeGeometry args={[0.56, 0.13]} />
+            <mesh position={[0, 0, 0.2305]}>
+              <planeGeometry args={[0.83, 0.122]} />
               <meshStandardMaterial color="#d2ccbf" roughness={0.7} />
             </mesh>
 
             {/* 3.5" Floppy Disk Drive Slot (Right side of front face) */}
-            <group position={[0.15, 0.01, 0.222]}>
+            <group position={[0.24, 0.008, 0.2315]}>
               {/* Drive Recess */}
               <mesh position={[0, 0, 0]}>
                 <boxGeometry args={[0.14, 0.045, 0.008]} />
@@ -406,7 +472,7 @@ export default function CRTMonitor({
             </group>
 
             {/* Power Push Button & Brand Badge (Left side of front face) */}
-            <group position={[-0.16, -0.01, 0.222]}>
+            <group position={[-0.26, -0.01, 0.2315]}>
               {/* Round Power Button */}
               <mesh position={[-0.05, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
                 <cylinderGeometry args={[0.012, 0.012, 0.008, 20]} />
@@ -424,11 +490,25 @@ export default function CRTMonitor({
               </mesh>
             </group>
 
-            {/* Swivel Neck Base connecting PC unit to Monitor Base */}
-            <mesh position={[0, 0.095, 0]} castShadow>
-              <cylinderGeometry args={[0.1, 0.12, 0.04, 32]} />
-              <meshStandardMaterial color="#cfcadc" roughness={0.6} />
+            {/* Tilt-and-swivel plinth between the case lid and the monitor.
+                Same beige as the rest of the machine: it was #cfcadc, a pale
+                lilac, which is why there was a purple disc under the screen. */}
+            <mesh position={[0, 0.0765, 0.02]}>
+              <cylinderGeometry args={[0.3, 0.33, 0.012, 48]} />
+              <meshStandardMaterial color="#cfc9bb" roughness={0.7} />
             </mesh>
+            {/* Four rubber feet, so the case sits on the desk, not in it. */}
+            {[
+              [-0.38, -0.19],
+              [0.38, -0.19],
+              [-0.38, 0.19],
+              [0.38, 0.19],
+            ].map(([fx, fz]) => (
+              <mesh key={`${fx}${fz}`} position={[fx, -0.0745, fz]}>
+                <cylinderGeometry args={[0.016, 0.016, 0.004, 12]} />
+                <meshStandardMaterial color="#2a2926" roughness={0.9} />
+              </mesh>
+            ))}
           </group>
         </group>
       ) : (
@@ -470,8 +550,12 @@ export default function CRTMonitor({
       )}
 
       {/* ------------------------------------------------- Stand */}
-      {/* Tilting arm: a flat aluminium blade, not a box — it is the silhouette
-          people recognise the display by. */}
+      {/* The aluminium arm and oval foot belong to the MODERN display only.
+          They used to render in both eras, so the beige CRT had a brushed
+          aluminium blade and a chrome foot buried inside its own base unit,
+          poking out of the back and through the floppy drive. */}
+      {era !== 'RETRO' && (
+        <group>
       <mesh position={[0, 0.9, -0.135]} rotation={[-0.32, 0, 0]} castShadow receiveShadow>
         <boxGeometry args={[0.2, 0.4, 0.022]} />
         <meshStandardMaterial color={ALUMINIUM} roughness={0.3} metalness={0.92} />
@@ -496,11 +580,8 @@ export default function CRTMonitor({
         </mesh>
       </group>
 
-      {/* 2.3 Dust on monitor top — visible when orbiting high */}
-      <mesh position={[0, PANEL.y + PANEL.h / 2 + 0.0005, PANEL.z]}>
-        <planeGeometry args={[PANEL.w * 0.95, PANEL.d * 0.9]} />
-        <meshBasicMaterial color="#d8d4cc" transparent opacity={0.06} depthWrite={false} />
-      </mesh>
+        </group>
+      )}
 
       {/* ---------------------------------------------------------- Screen Glass (ROOM View — 3D Wallpaper) */}
       {/* Sits at SCREEN.z, which layout.js guarantees is in front of the panel
@@ -536,6 +617,7 @@ export default function CRTMonitor({
           pendingApp={pendingApp}
           onPendingHandled={onPendingHandled}
           onScreenFocus={onScreenFocus}
+          scanlines={isZoomed}
         />
       </Html>
 

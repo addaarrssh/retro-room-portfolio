@@ -12,6 +12,7 @@ import {
   cushionGeometry,
   cylinderProfile,
   keycapGeometry,
+  leafGeometry,
   lampBaseProfile,
   lampShadeProfile,
   mugProfile,
@@ -168,14 +169,21 @@ function GroundShadow() {
   return (
     <group>
       {/* Desk. Wider than deep, offset back to sit under the worktop. */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.004, -0.3]} renderOrder={1}>
-        <planeGeometry args={[4.6, 2.4]} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.004, DESK_Z]} renderOrder={1}>
+        <planeGeometry args={[4.4, 2.6]} />
         <meshBasicMaterial map={tex} transparent depthWrite={false} opacity={0.95} />
       </mesh>
       {/* Chair, smaller and tighter — it stands on castors, so its contact
           patch is genuinely smaller than the desk's. */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1.5, 0.005, 1.75]} renderOrder={1}>
-        <planeGeometry args={[1.9, 1.9]} />
+      {/* Positioned FROM the chair. It was hard-coded half a metre away from
+          it, so the chair floated and a grey smudge sat alone on the floor. */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[CHAIR_POS[0], 0.005, CHAIR_POS[2]]} renderOrder={1}>
+        <planeGeometry args={[1.5, 1.5]} />
+        <meshBasicMaterial map={tex} transparent depthWrite={false} opacity={0.8} />
+      </mesh>
+      {/* Plant pot. */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[PLANT_POS[0], 0.005, PLANT_POS[2]]} renderOrder={1}>
+        <planeGeometry args={[1.25, 1.25]} />
         <meshBasicMaterial map={tex} transparent depthWrite={false} opacity={0.75} />
       </mesh>
     </group>
@@ -192,8 +200,29 @@ function GroundShadow() {
    was cropped at both edges instead of floating in the middle of an empty
    sweep. Narrowing it is what lets the composition breathe. */
 const DESK_W = 2.3
-const DESK_D = 1.05
-const DESK_Z = -0.35
+
+/* Depth and position are set by what has to stand on the desk, front to back:
+   the monitor's 0.44m body, the base unit that sticks out 12cm in front of it,
+   a clear strip, the keyboard, and a margin before the edge. That adds up to
+   about 1.2m with the front edge at z = +0.62.
+
+   It was 1.05m deep and centred at z = -0.35, which put the front edge at
+   +0.175 — only 5cm in front of the base unit. There was physically no room
+   for a keyboard, so it sat INSIDE the base unit with its ends poking out of
+   both sides, and the notebook and the loose sheet hung in mid-air past the
+   edge. */
+const DESK_D = 1.2
+const DESK_Z = 0.02
+
+/* The chair is pushed back and to the right of the desk, turned in toward it,
+   as if someone just stood up. It used to stand directly in front of the right
+   half of the desk with its back to the camera: a tall dark slab covering the
+   drawer unit, the binders and most of the plant, and it cut into the right
+   edge of the frame once you sat down. Out here it reads as a chair in three-
+   quarter view and hides nothing. The plant moves to the left so the desk has
+   something either side of it. */
+const CHAIR_POS = [1.78, 0, 1.0]
+const PLANT_POS = [-1.78, 0, -0.2]
 
 function Desk() {
   const P = usePalette()
@@ -206,54 +235,86 @@ function Desk() {
     }
   }, [wood, deskWear])
 
-  const legX = DESK_W / 2 - 0.12
-  const legZ = DESK_D / 2 - 0.1
+  /* The desk is three parts, the way a good one is actually built: a thick
+     slab, a drawer pedestal that carries its right end, and a steel sled leg
+     that carries its left. It used to be a slab on four tube legs with a box
+     pushed underneath — and the two right-hand legs ran straight THROUGH that
+     box, which is the dark notch that showed at its bottom corner. */
+  const PED_W = 0.52
+  const PED_H = 0.6
+  const PED_D = DESK_D - 0.14
+  const pedX = DESK_W / 2 - PED_W / 2 - 0.05
+  const sledX = -DESK_W / 2 + 0.14
+  const sledZ = DESK_D / 2 - 0.12
+  const underTop = DESK_TOP - 0.055
+  const steel = { color: P.deskLeg, roughness: 0.42, metalness: 0.55 }
 
   return (
     <group position={[0, 0, DESK_Z]}>
-      {/* Top slab.
-
-          `color` is WHITE here, and that is the fix for a desk that stayed
-          black however much the palette was lightened. `map` and `color`
-          MULTIPLY: the wood texture is already drawn in the palette's own
-          colours, so tinting it a second time with deskTop squared the value —
-          a mid grey map times a mid grey tint lands at roughly a fifth of
-          either. The map carries the albedo; the tint gets out of its way. */}
-      <RoundedBox args={[DESK_W, 0.06, DESK_D]} radius={0.009} smoothness={5} position={[0, DESK_TOP - 0.03, 0]} castShadow receiveShadow>
+      {/* Top slab. `color` stays WHITE: map and color multiply, and the wood
+          texture is already drawn in the palette's own colours. */}
+      <RoundedBox args={[DESK_W, 0.055, DESK_D]} radius={0.012} smoothness={5} position={[0, DESK_TOP - 0.0275, 0]} castShadow receiveShadow>
         <meshPhysicalMaterial map={wood} roughnessMap={deskWear} color="#ffffff" {...surfaceWithMaps('lacqueredWood')} />
       </RoundedBox>
 
-      {/* Sleek Tapered Cylindrical Metallic Legs */}
-      {[
-        [-legX, -legZ],
-        [legX, -legZ],
-        [-legX, legZ],
-        [legX, legZ],
-      ].map(([x, z], i) => (
-        <mesh key={i} position={[x, (DESK_TOP - 0.06) / 2, z]} castShadow>
-          <cylinderGeometry args={[0.032, 0.042, DESK_TOP - 0.06, 32]} />
-          <meshPhysicalMaterial color={P.deskLeg} {...surface('anodisedAluminium')} />
-        </mesh>
-      ))}
+      {/* Steel apron, inset under the slab. The shadow gap it leaves is what
+          makes the top read as a separate, floating board. */}
+      <mesh position={[-0.2, underTop - 0.02, 0]}>
+        <boxGeometry args={[DESK_W - 0.75, 0.04, DESK_D - 0.22]} />
+        <meshStandardMaterial {...steel} />
+      </mesh>
 
-      {/* Modesty panel — smooth rounded */}
-      <RoundedBox args={[DESK_W - 0.3, 0.5, 0.02]} radius={0.006} smoothness={4} position={[0, 0.4, -legZ - 0.03]}>
-        <meshPhysicalMaterial map={wood} color="#ffffff" {...surfaceWithMaps('paintedWood')} />
+      {/* Sled leg, left: two uprights joined by a foot on the floor. */}
+      <group position={[sledX, 0, 0]}>
+        {[-sledZ, sledZ].map((z) => (
+          <RoundedBox key={z} args={[0.05, underTop - 0.03, 0.05]} radius={0.008} smoothness={3} position={[0, (underTop - 0.03) / 2 + 0.03, z]} castShadow>
+            <meshStandardMaterial {...steel} />
+          </RoundedBox>
+        ))}
+        <RoundedBox args={[0.06, 0.03, sledZ * 2 + 0.12]} radius={0.008} smoothness={3} position={[0, 0.015, 0]} castShadow>
+          <meshStandardMaterial {...steel} />
+        </RoundedBox>
+      </group>
+
+      {/* Modesty panel at the back, in the same wood. */}
+      <RoundedBox args={[DESK_W - PED_W - 0.5, 0.36, 0.018]} radius={0.004} smoothness={3} position={[-0.2, underTop - 0.22, -DESK_D / 2 + 0.14]}>
+        <meshStandardMaterial map={wood} color="#e9e9e9" roughness={0.6} />
       </RoundedBox>
 
-      {/* Drawer unit. The carcass was hardcoded #6e523b — a saturated walnut
-          brown that ignored the palette entirely, so it stayed a dark wooden
-          box under a grey desk in every appearance. It follows the desk now. */}
-      <group position={[DESK_W / 2 - 0.33, 0, 0]}>
-        <RoundedBox args={[0.5, 0.62, DESK_D - 0.12]} radius={0.015} smoothness={4} position={[0, 0.31, 0]} castShadow receiveShadow>
-          <meshStandardMaterial map={wood} color="#ffffff" roughness={0.45} />
+      {/* Drawer pedestal, right. */}
+      <group position={[pedX, 0, 0]}>
+        {/* Recessed plinth, so the carcass hovers a few centimetres. */}
+        <mesh position={[0, 0.025, -0.01]}>
+          <boxGeometry args={[PED_W - 0.05, 0.05, PED_D - 0.06]} />
+          <meshStandardMaterial color="#1c1c1e" roughness={0.8} />
+        </mesh>
+        <RoundedBox args={[PED_W, PED_H, PED_D]} radius={0.01} smoothness={4} position={[0, 0.05 + PED_H / 2, 0]} castShadow receiveShadow>
+          <meshStandardMaterial map={wood} color="#f2f2f2" roughness={0.5} />
         </RoundedBox>
-        {/* Smooth capsule drawer handles */}
-        {[0.14, 0.34, 0.54].map((y) => (
-          <mesh key={y} position={[0, y, DESK_D / 2 - 0.07]} rotation={[0, 0, Math.PI / 2]}>
-            <capsuleGeometry args={[0.008, 0.18, 12, 24]} />
-            <meshStandardMaterial color="#27272a" roughness={0.2} metalness={0.85} />
-          </mesh>
+        {/* Three drawer fronts, standing 6mm proud with a dark reveal between
+            them — the reveal is the detail that says "drawers", a handle on a
+            flat face only says "box with handles". */}
+        <mesh position={[0, 0.05 + PED_H / 2, PED_D / 2 + 0.0005]}>
+          <planeGeometry args={[PED_W - 0.03, PED_H - 0.03]} />
+          <meshStandardMaterial color="#1a1512" roughness={0.9} />
+        </mesh>
+        {[0.52, 0.335, 0.15].map((y, k) => (
+          <group key={y} position={[0, y + 0.05, PED_D / 2 + 0.004]}>
+            <RoundedBox args={[PED_W - 0.04, k === 2 ? 0.2 : 0.165, 0.008]} radius={0.003} smoothness={3} position={[0, k === 2 ? -0.018 : 0, 0]} receiveShadow>
+              <meshStandardMaterial map={wood} color="#ffffff" roughness={0.42} />
+            </RoundedBox>
+            {/* Slim bar pull on two standoffs. */}
+            <mesh position={[0, 0.045, 0.02]} rotation={[0, 0, Math.PI / 2]}>
+              <capsuleGeometry args={[0.006, 0.16, 6, 16]} />
+              <meshStandardMaterial color="#c9c4b8" roughness={0.25} metalness={0.9} />
+            </mesh>
+            {[-0.07, 0.07].map((hx) => (
+              <mesh key={hx} position={[hx, 0.045, 0.011]} rotation={[Math.PI / 2, 0, 0]}>
+                <cylinderGeometry args={[0.004, 0.004, 0.018, 10]} />
+                <meshStandardMaterial color="#c9c4b8" roughness={0.25} metalness={0.9} />
+              </mesh>
+            ))}
+          </group>
         ))}
       </group>
     </group>
@@ -301,172 +362,177 @@ function Piping({ points, radius = 0.006, color = '#dc2626' }) {
 /* Executive Leather Office Chair — Replica of Brown Executive Swivel Chair   */
 /* ========================================================================== */
 
-function ArmrestLoop({ side = 1 }) {
+function ArmrestLoop({ side = 1, leather }) {
   const curve = useMemo(() => {
     return new CatmullRomCurve3([
-      new Vector3(side * 0.22, 0.45, 0.05),
-      new Vector3(side * 0.26, 0.44, -0.16),
-      new Vector3(side * 0.27, 0.58, -0.19),
-      new Vector3(side * 0.27, 0.65, -0.05),
-      new Vector3(side * 0.27, 0.64, 0.12),
-      new Vector3(side * 0.22, 0.58, 0.18),
+      new Vector3(side * 0.2, 0.44, 0.06),
+      new Vector3(side * 0.275, 0.45, -0.1),
+      new Vector3(side * 0.29, 0.57, -0.17),
+      new Vector3(side * 0.29, 0.655, -0.06),
+      new Vector3(side * 0.29, 0.65, 0.1),
+      new Vector3(side * 0.25, 0.58, 0.2),
     ])
   }, [side])
 
   return (
     <group>
-      {/* Silver / Chrome Loop Arm Frame */}
-      <mesh castShadow receiveShadow>
-        <tubeGeometry args={[curve, 32, 0.016, 12, false]} />
-        <meshStandardMaterial color="#e2e8f0" metalness={0.95} roughness={0.15} />
+      <mesh castShadow>
+        <tubeGeometry args={[curve, 40, 0.013, 12, false]} />
+        <meshStandardMaterial color="#d9dce0" metalness={0.95} roughness={0.18} />
       </mesh>
-      {/* Top Padded Brown Leather Arm Rest */}
-      <group position={[side * 0.27, 0.66, -0.02]} rotation={[0.08, 0, 0]}>
-        <RoundedBox args={[0.08, 0.038, 0.28]} radius={0.015} smoothness={5} castShadow receiveShadow>
-          <meshPhysicalMaterial color="#42241d" roughness={0.38} clearcoat={0.45} clearcoatRoughness={0.25} />
+      <group position={[side * 0.29, 0.668, -0.01]} rotation={[0.04, 0, 0]}>
+        <RoundedBox args={[0.06, 0.028, 0.26]} radius={0.013} smoothness={5} castShadow>
+          <meshPhysicalMaterial {...leather} />
         </RoundedBox>
       </group>
     </group>
   )
 }
 
+/* ==========================================================================
+   Chair — a soft-pad executive chair.
+
+   Rebuilt around three decisions:
+
+   · THE CUSHIONS ARE CUSHIONS. The seat and back were stacks of rounded
+     boxes, which read as planks. They are now inflated-box geometry (see
+     cushionGeometry), so every face crowns and the corners melt the way foam
+     under leather does.
+   · THE BACK HAS A SHELL. A dark moulded shell behind a lighter pad, with a
+     visible edge all round, is the silhouette of every good office chair. A
+     single slab of one colour is the silhouette of a headstone.
+   · IT IS TAN. The palette has specified tan leather all along; the meshes
+     were hard-coded to a near-black brown, so the chair rendered as a dark
+     mass and the one warm object in the room was missing.
+   ========================================================================== */
 function Chair() {
+  const P = usePalette()
+  const cushion = useMemo(() => cushionGeometry({ crown: 0.34, segments: 12 }), [])
+  /* Channel pillows crown much harder than the base cushion: each one is a
+     narrow band of foam held down along both seams. */
+  const pillow = useMemo(() => cushionGeometry({ crown: 0.62, segments: 12 }), [])
+  useEffect(
+    () => () => {
+      cushion.dispose()
+      pillow.dispose()
+    },
+    [cushion, pillow],
+  )
+
+  const leather = {
+    color: P.chairShell,
+    roughness: 0.46,
+    clearcoat: 0.25,
+    clearcoatRoughness: 0.5,
+    sheen: 0.4,
+    sheenColor: '#ffe2c2',
+  }
+  const shell = { color: '#232326', roughness: 0.5, metalness: 0.2 }
+  /* The back of the backrest is upholstered too, a shade darker. */
+  const backLeather = { color: P.chairAccent, roughness: 0.55 }
+  const chrome = { color: '#d9dce0', metalness: 0.95, roughness: 0.18 }
+
   return (
-    <group position={[1.15, 0, 1.25]} rotation={[0, -0.65, 0]}>
-      {/* ------------------------------------------------------ Seat Cushion */}
-      <group position={[0, 0.48, 0]}>
-        {/* Main Plush Seat Base */}
-        <RoundedBox args={[0.5, 0.09, 0.48]} radius={0.022} smoothness={5} position={[0, 0, 0]} castShadow receiveShadow>
-          <meshPhysicalMaterial color="#42241d" roughness={0.38} clearcoat={0.45} clearcoatRoughness={0.25} />
-        </RoundedBox>
-        {/* Top Plush Cushion Layer */}
-        <RoundedBox args={[0.46, 0.05, 0.44]} radius={0.018} smoothness={5} position={[0, 0.045, 0]} castShadow receiveShadow>
-          <meshPhysicalMaterial color="#42241d" roughness={0.38} clearcoat={0.45} clearcoatRoughness={0.25} />
-        </RoundedBox>
-        {/* Front Knee Roll / Waterfall Curve */}
-        <mesh position={[0, 0.01, -0.24]} rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
-          <cylinderGeometry args={[0.045, 0.045, 0.46, 24]} />
-          <meshPhysicalMaterial color="#42241d" roughness={0.38} clearcoat={0.45} clearcoatRoughness={0.25} />
+    /* Turned three-quarters TOWARD the camera, so what you see is the tan seat
+       and pad. Facing the desk, the camera got the back of the shell: a tall
+       dark rectangle, which is the least interesting side of any chair. */
+    <group position={CHAIR_POS} rotation={[0, 2.25, 0]}>
+      {/* ---------------------------------------------------------- Seat */}
+      <RoundedBox args={[0.52, 0.035, 0.5]} radius={0.016} smoothness={4} position={[0, 0.455, 0]} castShadow>
+        <meshStandardMaterial {...shell} />
+      </RoundedBox>
+      {/* Seat: a base cushion with three channel-stitched pillows on top.
+          The channels are real geometry — separate inflated pads pressed
+          against each other — because a stitched seam on leather is a valley
+          between two crowns, and a painted line can never cast that shadow. */}
+      <mesh geometry={cushion} position={[0, 0.5, -0.005]} scale={[0.25, 0.032, 0.245]} castShadow receiveShadow>
+        <meshPhysicalMaterial {...leather} />
+      </mesh>
+      {[-0.155, 0, 0.155].map((z, i) => (
+        <mesh
+          key={z}
+          geometry={pillow}
+          position={[0, 0.54 + (i === 2 ? -0.004 : 0), z - 0.005]}
+          scale={[0.228, 0.03, 0.079]}
+          castShadow
+          receiveShadow
+        >
+          <meshPhysicalMaterial {...leather} />
         </mesh>
-        {/* Side Stitched Seams */}
-        {[-0.18, 0.18].map((x) => (
-          <mesh key={x} position={[x, 0.065, 0]}>
-            <boxGeometry args={[0.005, 0.005, 0.4]} />
-            <meshPhysicalMaterial color="#321914" roughness={0.45} />
+      ))}
+
+      {/* ---------------------------------------------------------- Back */}
+      <group position={[0, 0.99, 0.25]} rotation={[0.13, 0, 0]}>
+        {/* Moulded outer shell, slightly larger than the pad so a dark rim
+            frames it all round. */}
+        <mesh geometry={cushion} position={[0, 0, 0.028]} scale={[0.255, 0.43, 0.03]} castShadow>
+          <meshPhysicalMaterial {...backLeather} clearcoat={0.15} clearcoatRoughness={0.6} />
+        </mesh>
+        {/* Five channel pillows, the top one a fatter head roll. Each band
+            sits a hair further forward toward the middle, so the stack has
+            the lumbar curve of a real backrest instead of being flat. */}
+        {[-0.3, -0.15, 0, 0.15, 0.31].map((y, i) => (
+          <mesh
+            key={y}
+            geometry={pillow}
+            position={[0, y, -0.012 - (i === 1 || i === 2 ? 0.01 : 0)]}
+            scale={[0.226, i === 4 ? 0.088 : 0.077, i === 4 ? 0.05 : 0.04]}
+            castShadow
+            receiveShadow
+          >
+            <meshPhysicalMaterial {...leather} />
           </mesh>
         ))}
+        {/* Spine bracket joining the back to the mechanism. */}
+        <RoundedBox args={[0.07, 0.34, 0.025]} radius={0.008} smoothness={3} position={[0, -0.52, 0.03]} rotation={[-0.28, 0, 0]} castShadow>
+          <meshStandardMaterial {...shell} />
+        </RoundedBox>
       </group>
 
-      {/* ------------------------------------------------------ Executive Backrest */}
-      <group position={[0, 0.96, 0.2]} rotation={[0.08, 0, 0]}>
-        {/* Main Outer Shell */}
-        <RoundedBox args={[0.46, 0.76, 0.07]} radius={0.026} smoothness={5} position={[0, 0, 0]} castShadow receiveShadow>
-          <meshPhysicalMaterial color="#42241d" roughness={0.38} clearcoat={0.45} clearcoatRoughness={0.25} />
-        </RoundedBox>
+      <ArmrestLoop side={-1} leather={leather} />
+      <ArmrestLoop side={1} leather={leather} />
 
-        {/* Integrated Top Headrest Cushion */}
-        <RoundedBox args={[0.38, 0.2, 0.04]} radius={0.018} smoothness={5} position={[0, 0.26, -0.028]} castShadow receiveShadow>
-          <meshPhysicalMaterial color="#42241d" roughness={0.38} clearcoat={0.45} clearcoatRoughness={0.25} />
-        </RoundedBox>
-
-        {/* Upper Backrest Panel with Inset Diagonal Stitching */}
-        <group position={[0, 0.04, -0.03]}>
-          <RoundedBox args={[0.35, 0.26, 0.03]} radius={0.014} smoothness={4} castShadow receiveShadow>
-            <meshPhysicalMaterial color="#42241d" roughness={0.38} clearcoat={0.45} clearcoatRoughness={0.25} />
-          </RoundedBox>
-          {/* Diagonal Stitch Line Details */}
-          {[-1, 1].map((sx) => (
-            <mesh key={sx} position={[sx * 0.11, 0, -0.018]} rotation={[0, 0, sx * -0.28]}>
-              <boxGeometry args={[0.004, 0.24, 0.005]} />
-              <meshPhysicalMaterial color="#321914" roughness={0.45} />
-            </mesh>
-          ))}
-        </group>
-
-        {/* Lower Lumbar Cushion Support */}
-        <RoundedBox args={[0.38, 0.2, 0.04]} radius={0.018} smoothness={5} position={[0, -0.2, -0.028]} castShadow receiveShadow>
-          <meshPhysicalMaterial color="#42241d" roughness={0.38} clearcoat={0.45} clearcoatRoughness={0.25} />
-        </RoundedBox>
-
-        {/* Horizontal Stitching Seams */}
-        {[-0.1, 0.16].map((y) => (
-          <mesh key={y} position={[0, y, -0.038]}>
-            <boxGeometry args={[0.36, 0.004, 0.005]} />
-            <meshPhysicalMaterial color="#321914" roughness={0.45} />
-          </mesh>
-        ))}
-      </group>
-
-      {/* ------------------------------------------------------ Loop Armrests */}
-      <ArmrestLoop side={-1} />
-      <ArmrestLoop side={1} />
-
-      {/* ------------------------------------------------------ Under-Seat Mechanism */}
-      <group position={[0, 0.4, 0]}>
-        <mesh position={[0, 0, 0]} castShadow>
-          <boxGeometry args={[0.22, 0.05, 0.22]} />
-          <meshStandardMaterial color="#1a1a1c" roughness={0.7} />
-        </mesh>
-        {/* Tilt tension control knob */}
-        <mesh position={[0, -0.05, 0.06]} castShadow>
-          <cylinderGeometry args={[0.028, 0.028, 0.06, 20]} />
-          <meshStandardMaterial color="#1a1a1c" roughness={0.7} />
-        </mesh>
-        {/* Height adjustment lever */}
-        <group position={[-0.14, -0.02, 0.02]} rotation={[0, 0, -0.25]}>
-          <mesh rotation={[0, 0, Math.PI / 2]} castShadow>
-            <cylinderGeometry args={[0.006, 0.006, 0.18, 12]} />
-            <meshStandardMaterial color="#e2e8f0" metalness={0.95} roughness={0.15} />
-          </mesh>
-          <mesh position={[-0.09, 0, 0]} castShadow>
-            <boxGeometry args={[0.03, 0.012, 0.04]} />
-            <meshStandardMaterial color="#1a1a1c" roughness={0.7} />
-          </mesh>
-        </group>
-      </group>
-
-      {/* ------------------------------------------------------ Hydraulics & Base */}
-      {/* Central Black Hydraulic Cover */}
-      <mesh position={[0, 0.24, 0]} castShadow>
-        <cylinderGeometry args={[0.038, 0.042, 0.2, 24]} />
-        <meshStandardMaterial color="#1a1a1c" roughness={0.7} />
+      {/* ------------------------------------------- Mechanism and gas lift */}
+      <RoundedBox args={[0.2, 0.05, 0.24]} radius={0.012} smoothness={3} position={[0, 0.41, 0.02]} castShadow>
+        <meshStandardMaterial {...shell} />
+      </RoundedBox>
+      <mesh position={[0, 0.3, 0]} castShadow>
+        <cylinderGeometry args={[0.024, 0.024, 0.2, 24]} />
+        <meshStandardMaterial {...chrome} />
       </mesh>
-      {/* Shiny Chrome Shaft */}
-      <mesh position={[0, 0.32, 0]} castShadow>
-        <cylinderGeometry args={[0.022, 0.022, 0.12, 24]} />
-        <meshStandardMaterial color="#e2e8f0" metalness={0.95} roughness={0.15} />
+      <mesh position={[0, 0.19, 0]} castShadow>
+        <cylinderGeometry args={[0.036, 0.042, 0.14, 24]} />
+        <meshStandardMaterial {...shell} />
       </mesh>
 
-      {/* ------------------------------------------------------ 5-Star Polished Chrome Base */}
+      {/* ------------------------------------------------ Five-star base */}
       {Array.from({ length: 5 }, (_, i) => {
-        const a = (i / 5) * Math.PI * 2
+        const a = (i / 5) * Math.PI * 2 + 0.3
         return (
           <group key={i} rotation={[0, a, 0]}>
-            {/* Arched Chrome Leg extending horizontally along ground */}
-            <mesh position={[0, 0.065, 0.14]} rotation={[Math.PI / 2 - 0.12, 0, 0]} castShadow receiveShadow>
-              <cylinderGeometry args={[0.015, 0.02, 0.28, 16]} />
-              <meshStandardMaterial color="#e2e8f0" metalness={0.95} roughness={0.15} />
+            {/* Each spoke falls from the hub to the castor. */}
+            <mesh position={[0, 0.095, 0.16]} rotation={[Math.PI / 2 + 0.16, 0, 0]} castShadow>
+              <cylinderGeometry args={[0.02, 0.014, 0.31, 14]} />
+              <meshStandardMaterial {...chrome} />
             </mesh>
-
-            {/* Black Caster Wheel Assembly resting on floor */}
-            <group position={[0, 0.025, 0.27]}>
-              <mesh position={[0, 0.015, 0]}>
-                <cylinderGeometry args={[0.008, 0.008, 0.02, 12]} />
-                <meshStandardMaterial color="#1a1a1c" roughness={0.7} />
+            <group position={[0, 0.03, 0.31]}>
+              <mesh position={[0, 0.03, 0]}>
+                <cylinderGeometry args={[0.009, 0.009, 0.03, 10]} />
+                <meshStandardMaterial {...shell} />
               </mesh>
-              <mesh rotation={[0, 0, Math.PI / 2]} castShadow>
-                <cylinderGeometry args={[0.026, 0.026, 0.022, 20]} />
-                <meshStandardMaterial color="#1a1a1c" roughness={0.7} />
-              </mesh>
+              {[-0.014, 0.014].map((wx) => (
+                <mesh key={wx} position={[wx, 0, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
+                  <cylinderGeometry args={[0.03, 0.03, 0.02, 20]} />
+                  <meshStandardMaterial color="#19191b" roughness={0.75} />
+                </mesh>
+              ))}
             </group>
           </group>
         )
       })}
-
-      {/* Center Chrome Hub Cap */}
-      <mesh position={[0, 0.11, 0]} castShadow>
-        <cylinderGeometry args={[0.05, 0.055, 0.03, 24]} />
-        <meshStandardMaterial color="#e2e8f0" metalness={0.95} roughness={0.15} />
+      <mesh position={[0, 0.125, 0]} castShadow>
+        <cylinderGeometry args={[0.046, 0.058, 0.05, 24]} />
+        <meshStandardMaterial {...chrome} />
       </mesh>
     </group>
   )
@@ -526,10 +592,13 @@ function Keyboard() {
   )
 
   return (
-    <group position={[-0.04, DESK_TOP + 0.005, 0.03]} rotation={[0, 0.02, 0]}>
+    <group position={[-0.04, DESK_TOP + 0.005, 0.38]} rotation={[0, 0.02, 0]}>
       {/* Keyboard Body — Smooth Rounded Chassis */}
       <RoundedBox args={[0.92, 0.022, 0.19]} radius={0.008} smoothness={4} position={[0, 0.011, 0]} rotation={[-0.045, 0, 0]} castShadow receiveShadow>
-        <meshStandardMaterial color="#18181b" roughness={0.25} metalness={0.75} />
+        {/* Beige, like the machine it is plugged into. It was gunmetal with
+            charcoal caps — a 2020s gaming board in front of a 1995 computer,
+            and the only black object on the desk, so it read as a hole. */}
+        <meshStandardMaterial color="#d3cec1" roughness={0.6} />
       </RoundedBox>
 
       <group rotation={[-0.045, 0, 0]}>
@@ -544,14 +613,15 @@ function Keyboard() {
           {/* ABS keycaps are not shiny. The old 0.2 metalness made them look
               like painted metal; real caps are a soft dielectric that picks
               up a faint clearcoat from finger oil. */}
-          <meshPhysicalMaterial
-            color="#27272a"
-            roughness={0.44}
-            clearcoat={0.3}
-            clearcoatRoughness={0.55}
-          />
+          <meshStandardMaterial color="#ffffff" roughness={0.55} />
           {standardKeys.map((k, i) => (
-            <Instance key={i} position={[k.x, 0.022, k.z]} color={k.accent ? '#7c7a76' : '#27272a'} />
+            <Instance
+              key={i}
+              position={[k.x, 0.022, k.z]}
+              /* Alphas are ivory; the modifier columns at either end are the
+                 darker grey every board of the period used. */
+              color={k.accent || k.x < -0.37 || k.x > 0.36 ? '#a9a497' : '#ece8dd'}
+            />
           ))}
         </Instances>
 
@@ -560,12 +630,7 @@ function Keyboard() {
             says a person actually sat here. */}
         {wasdKeys.map((w) => (
           <mesh key={w.key} position={[w.x, 0.0214, w.z]} geometry={cap}>
-            <meshPhysicalMaterial
-              color="#1d1d20"
-              roughness={0.2}
-              clearcoat={0.72}
-              clearcoatRoughness={0.16}
-            />
+            <meshStandardMaterial color="#e2ddd0" roughness={0.28} />
           </mesh>
         ))}
 
@@ -573,22 +638,17 @@ function Keyboard() {
             are only a handful and they are a different size. */}
         {wideKeys.map((k, i) => (
           <mesh key={i} position={[k.x, 0.022, k.z]} geometry={wideCap}>
-            <meshPhysicalMaterial
-              color="#27272a"
-              roughness={0.44}
-              clearcoat={0.3}
-              clearcoatRoughness={0.55}
-            />
+            <meshStandardMaterial color="#ece8dd" roughness={0.55} />
           </mesh>
         ))}
 
         {[-0.02, 0.02].map((x, i) => (
           <mesh key={x} position={[0.36 + x, 0.026, -0.078]}>
-            <sphereGeometry args={[0.006, 16, 16]} />
+            <sphereGeometry args={[0.004, 12, 12]} />
             <meshStandardMaterial
-              color={i === 0 ? '#f0a860' : '#27272a'}
-              emissive={i === 0 ? '#0284c7' : '#000000'}
-              emissiveIntensity={i === 0 ? 2.2 : 0}
+              color={i === 0 ? '#3ddc6a' : '#8f8a7d'}
+              emissive={i === 0 ? '#22c55e' : '#000000'}
+              emissiveIntensity={i === 0 ? 1.6 : 0}
               toneMapped={false}
             />
           </mesh>
@@ -603,102 +663,72 @@ function Keyboard() {
 /* ========================================================================== */
 
 function Mouse() {
+  /* The cord. A period mouse is a corded mouse, and the cable wandering back
+     toward the machine is what ties it to the computer — without it the mouse
+     is a loose pebble on a mat. */
+  const cord = useMemo(
+    () =>
+      new CatmullRomCurve3([
+        new Vector3(0, 0.014, -0.08),
+        new Vector3(0.01, 0.006, -0.16),
+        new Vector3(-0.07, 0.005, -0.27),
+        new Vector3(-0.22, 0.005, -0.34),
+        new Vector3(-0.36, 0.005, -0.44),
+        new Vector3(-0.42, 0.005, -0.62),
+      ]),
+    [],
+  )
+
   return (
-    <group position={[0.66, DESK_TOP + 0.005, 0.02]}>
-      {/* Razer Gaming Mousepad — Smooth Rounded Rectangle with Neon RGB Border */}
-      <group rotation={[0, 0.06, 0]}>
-        <RoundedBox args={[0.3, 0.004, 0.24]} radius={0.008} smoothness={4} position={[0, 0.002, 0]} receiveShadow>
-          <meshStandardMaterial color="#09090b" roughness={0.8} />
+    <group position={[0.78, DESK_TOP, 0.38]}>
+      {/* Mousepad: cloth top on a thin rubber base, with a stitched edge. */}
+      <group rotation={[0, 0.05, 0]}>
+        <RoundedBox args={[0.42, 0.005, 0.34]} radius={0.002} smoothness={3} position={[0, 0.0025, 0]} receiveShadow>
+          <meshStandardMaterial color="#2a2d33" roughness={0.95} />
         </RoundedBox>
-        {/* RGB Perimeter Trim */}
-        <mesh position={[0, 0.004, 0]}>
-          <planeGeometry args={[0.298, 0.238]} />
-          <meshBasicMaterial color="#c8c4bc" transparent opacity={0.3} toneMapped={false} />
+        <mesh position={[0, 0.0052, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[0.395, 0.315]} />
+          <meshStandardMaterial color="#33373f" roughness={1} />
         </mesh>
       </group>
 
-      {/* ---------------------------------------------------- Razer Honeycomb Mouse Chassis */}
-      <group position={[0, 0.006, 0]}>
-        {/* Sensor glow. This was a real point light with distance 0.12 — it
-            lit nothing but its own shell, while still costing every lit
-            surface in the room an extra light in the shader. An emissive
-            sphere and the bloom pass give the identical result for free. */}
-        <mesh position={[0, 0.015, 0]}>
-          <sphereGeometry args={[0.012, 16, 16]} />
-          <meshBasicMaterial color="#c8c4bc" toneMapped={false} />
+      {/* ------------------------------------------------------- The mouse
+          A two-button beige mouse: a low dome, flatter at the front where the
+          buttons are, with a seam between the buttons and one across the
+          body. The old model was a gunmetal capsule with six torus "honeycomb"
+          rings, a glowing sensor and a logo plate — forty draw calls of detail
+          that from the camera read as a single black blob. Shape first. */}
+      <group position={[-0.02, 0.005, 0.02]} rotation={[0, 0.18, 0]}>
+        <mesh position={[0, 0.004, 0]} scale={[0.05, 0.034, 0.082]} castShadow>
+          <sphereGeometry args={[1, 32, 20, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          <meshPhysicalMaterial color="#d8d3c6" roughness={0.5} clearcoat={0.2} clearcoatRoughness={0.5} />
         </mesh>
-
-        {/* Outer Magnesium Exoskeleton Arch Shell (Dark Gunmetal Finish) */}
-        <mesh position={[0, 0.02, 0]} castShadow>
-          <capsuleGeometry args={[0.026, 0.042, 16, 32]} />
-          <meshStandardMaterial color="#16161a" roughness={0.22} metalness={0.88} />
+        {/* Base skirt, so the dome does not end in a knife edge. */}
+        <mesh position={[0, 0.003, 0]} scale={[1, 1, 1.64]}>
+          <cylinderGeometry args={[0.05, 0.049, 0.006, 32]} />
+          <meshStandardMaterial color="#c4bfb2" roughness={0.6} />
         </mesh>
-
-        {/* Triangular / Honeycomb Cutout Lattice Array */}
-        {[-0.01, 0.01].map((x) =>
-          [-0.012, 0, 0.012].map((z) => (
-            <mesh key={`${x}-${z}`} position={[x, 0.034, z]} rotation={[0, 0, Math.PI / 4]}>
-              <torusGeometry args={[0.007, 0.0025, 8, 16]} />
-              <meshStandardMaterial color="#0d0d10" roughness={0.3} metalness={0.9} />
-            </mesh>
-          ))
-        )}
-
-        {/* Ergonomic left & right click blades. A mouse button is a moulded
-            shell that follows the curve of the chassis under your fingertip —
-            as a flat box it read as a chiclet glued to the top. Flattened
-            spheres pick up the same specular sweep as the shell they sit on. */}
-        {[-0.011, 0.011].map((x) => (
-          <mesh
-            key={x}
-            position={[x, 0.024, -0.024]}
-            rotation={[0.12, 0, x > 0 ? -0.05 : 0.05]}
-            scale={[0.0095, 0.005, 0.019]}
-            castShadow
-          >
-            <sphereGeometry args={[1, 24, 16]} />
-            <meshPhysicalMaterial
-              color="#18181c"
-              roughness={0.28}
-              metalness={0.6}
-              clearcoat={0.55}
-              clearcoatRoughness={0.25}
-            />
-          </mesh>
-        ))}
-
-        {/* White "RAZER" Logo Text Emblem on Right Trigger */}
-        <mesh position={[0.012, 0.029, -0.018]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[0.014, 0.004]} />
-          <meshBasicMaterial color="#f8fafc" toneMapped={false} />
+        {/* Seam between the two buttons. */}
+        <mesh position={[0, 0.03, -0.042]} rotation={[0.42, 0, 0]}>
+          <boxGeometry args={[0.0018, 0.004, 0.058]} />
+          <meshStandardMaterial color="#8d887b" roughness={0.8} />
         </mesh>
-
-        {/* Knurled Metallic Chrome Scroll Wheel with RGB Center */}
-        <group position={[0, 0.028, -0.028]} rotation={[0.3, 0, 0]}>
-          <mesh castShadow rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[0.006, 0.006, 0.006, 24]} />
-            <meshStandardMaterial color="#e2e8f0" roughness={0.1} metalness={0.95} />
-          </mesh>
-          <mesh rotation={[0, 0, Math.PI / 2]}>
-            <torusGeometry args={[0.0065, 0.001, 12, 24]} />
-            <meshBasicMaterial color="#c8c4bc" toneMapped={false} />
-          </mesh>
-        </group>
-
-        {/* Dual side thumb buttons — capsules, because a side button is a
-            small pill that stands proud of the shell, not a chip of box. */}
-        {[-0.008, 0.006].map((z) => (
-          <mesh key={z} position={[-0.026, 0.022, z]} rotation={[Math.PI / 2, 0, -0.2]}>
-            <capsuleGeometry args={[0.0022, 0.006, 6, 12]} />
-            <meshPhysicalMaterial
-              color="#09090b"
-              roughness={0.32}
-              metalness={0.6}
-              clearcoat={0.4}
-            />
-          </mesh>
-        ))}
+        {/* Seam across the body, behind the buttons. */}
+        <mesh position={[0, 0.0375, -0.006]} rotation={[0.06, 0, 0]}>
+          <boxGeometry args={[0.082, 0.004, 0.0018]} />
+          <meshStandardMaterial color="#8d887b" roughness={0.8} />
+        </mesh>
+        {/* Strain relief where the cord leaves. */}
+        <mesh position={[0, 0.012, -0.08]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.006, 0.008, 0.02, 12]} />
+          <meshStandardMaterial color="#bdb8ab" roughness={0.7} />
+        </mesh>
       </group>
+
+      <mesh>
+        <tubeGeometry args={[cord, 48, 0.0042, 8, false]} />
+        <meshStandardMaterial color="#cfcabd" roughness={0.7} />
+      </mesh>
     </group>
   )
 }
@@ -1002,179 +1032,188 @@ function DeskLamp({ lampOn = true, onToggleLamp }) {
   )
 }
 
+/* ==========================================================================
+   DeskClutter — the things that say a person works here.
+
+   Three rules, each of which the previous version broke:
+
+   1. EVERYTHING IS IN WORLD COORDINATES AND MUST LAND ON THE TOP. The desk
+      spans x -1.15..1.15 and z -0.58..0.62. The notebook and the loose sheet
+      used to sit past the front edge, in mid-air.
+
+   2. NOTHING OVERLAPS. The mug stood at the same spot as the mouse — one was
+      inside the other. Zones, left to right:
+        left   x < -0.45      tray (back), printout, loose sheet, notebook
+        centre                machine, keyboard
+        right  x > 0.5        binders (back), mug, mousepad (front)
+
+   3. PROPS ARE SCALED TO THE MACHINE. The monitor and keyboard are drawn
+      about twice life size, which is what gives the room its toy-diorama
+      charm. The mug, tray and binders were modelled at true size, so next to
+      a metre-wide keyboard the mug was an eggcup. PROP is the one number that
+      brings them into the same world.
+   ========================================================================== */
+const PROP = 1.5
+
 function DeskClutter({ onHoverProp }) {
-  const mug = useMemo(() => mugProfile(), [])
+  const mug = useMemo(
+    () => mugProfile({ rBottom: 0.04, rTop: 0.044, height: 0.094, wall: 0.0045 }),
+    [],
+  )
   const ceramic = surfaceWithMaps('ceramic')
   /* Paper, written out rather than pulled from SURFACES — there is no 'paper'
      preset, and surface() silently falls back to PLASTIC for an unknown key,
-     which would have given every sheet on this desk a soft sheen. Paper is the
-     most diffuse thing in the room: no clearcoat, no metalness, and roughness
-     just short of 1 so it still takes a little shape from the key light. */
+     which would have given every sheet on this desk a soft sheen. */
   const paper = { roughness: 0.94, metalness: 0, clearcoat: 0 }
 
   return (
     <group>
-      {/* ==================================================================
-          A desk somebody works at.
-
-          This held three things: a mug, a notebook, and a rocker switch for
-          an era toggle that no longer exists. Two problems with that.
-
-          The obvious one is that the notebook sat at x = -1.16 on a desk whose
-          half-width is now 1.15 — it was hanging in mid air off the left edge,
-          a real bug introduced when the desk was narrowed and the props were
-          not moved with it.
-
-          The subtler one is the reason the room never felt finished: an empty
-          desk with one mug on it does not read as minimal, it reads as
-          UNFURNISHED. The reference site's desk carries a paper tray, a stack
-          of output, a loose sheet with writing on it, two ring binders and a
-          mug — and that density is doing the emotional work. Objects with no
-          function say a person was here and left for a minute. The negative
-          space around the DESK is the composition; negative space on top of
-          the desk is just an absence.
-
-          Everything below is placed in desk-local coordinates against the
-          2.3m top, with the keyboard zone (roughly x -0.45..0.45, z 0.1..0.35)
-          left clear.
-          ================================================================== */}
-
       {/* ---- Letter tray, stacked two high, with output sitting in it ---- */}
-      <group position={[-0.85, DESK_TOP, -0.12]} rotation={[0, 0.08, 0]}>
+      <group position={[-0.88, DESK_TOP, -0.3]} rotation={[0, 0.1, 0]} scale={PROP * 0.9}>
         {[0, 0.055].map((y, i) => (
           <group key={i} position={[0, y, 0]}>
-            {/* The tray is a floor and two side rails — an open box would read
-                as a container, and the whole point of a letter tray is that
-                you can see the paper in it from the side. */}
-            <RoundedBox args={[0.3, 0.008, 0.23]} radius={0.002} smoothness={3} castShadow receiveShadow>
-              <meshPhysicalMaterial color="#b9ae9a" roughness={0.78} />
+            <RoundedBox args={[0.3, 0.008, 0.23]} radius={0.002} smoothness={3} position={[0, 0.004, 0]} castShadow receiveShadow>
+              <meshStandardMaterial color="#2c2c2f" roughness={0.55} metalness={0.3} />
             </RoundedBox>
             {[-0.146, 0.146].map((x) => (
-              <RoundedBox
-                key={x}
-                position={[x, 0.018, 0]}
-                args={[0.012, 0.036, 0.23]}
-                radius={0.002}
-                smoothness={3}
-                castShadow
-              >
-                <meshPhysicalMaterial color="#a99d88" roughness={0.8} />
+              <RoundedBox key={x} position={[x, 0.022, 0]} args={[0.008, 0.036, 0.23]} radius={0.002} smoothness={3}>
+                <meshStandardMaterial color="#2c2c2f" roughness={0.55} metalness={0.3} />
               </RoundedBox>
             ))}
-            {/* Paper in the tray. Slightly rotated, because paper never lands
-                square, and that tiny angle is most of what stops a stack of
-                boxes from looking like a stack of boxes. */}
+            <RoundedBox position={[0, 0.022, -0.113]} args={[0.3, 0.036, 0.006]} radius={0.002} smoothness={3}>
+              <meshStandardMaterial color="#2c2c2f" roughness={0.55} metalness={0.3} />
+            </RoundedBox>
+            {/* Paper never lands square; the small angle is what stops a stack
+                of boxes looking like a stack of boxes. */}
             <RoundedBox
-              position={[0.004, 0.019, -0.004]}
-              rotation={[0, 0.035, 0]}
-              args={[0.255, 0.022, 0.196]}
+              position={[0.004, 0.019, 0.006]}
+              rotation={[0, i ? -0.03 : 0.04, 0]}
+              args={[0.262, 0.02 - i * 0.008, 0.2]}
               radius={0.001}
               smoothness={2}
-              castShadow
               receiveShadow
             >
-              <meshPhysicalMaterial color="#f4f2ec" {...paper} />
+              <meshStandardMaterial color="#f4f2ec" {...paper} />
             </RoundedBox>
           </group>
         ))}
       </group>
 
-      {/* ---- A loose stack of printout, straight on the desk ---- */}
-      <group position={[-0.48, DESK_TOP, -0.16]} rotation={[0, -0.06, 0]}>
-        <RoundedBox args={[0.23, 0.036, 0.18]} radius={0.001} smoothness={2} castShadow receiveShadow>
-          <meshPhysicalMaterial color="#f6f4ee" {...paper} />
+      {/* ---- A loose stack of printout ---- */}
+      <group position={[-0.72, DESK_TOP + 0.02, 0.08]} rotation={[0, -0.09, 0]} scale={PROP * 0.85}>
+        <RoundedBox args={[0.23, 0.026, 0.17]} radius={0.001} smoothness={2} castShadow receiveShadow>
+          <meshStandardMaterial color="#f1efe8" {...paper} />
         </RoundedBox>
-        {/* The top sheet, offset — a stack with a perfectly flush top edge is
-            a solid, not a stack. */}
-        <RoundedBox
-          position={[0.012, 0.019, 0.008]}
-          rotation={[0, 0.05, 0]}
-          args={[0.225, 0.002, 0.176]}
-          radius={0.0008}
-          smoothness={2}
-        >
-          <meshPhysicalMaterial color="#fbfaf6" {...paper} />
+        <RoundedBox position={[0.01, 0.0145, 0.006]} rotation={[0, 0.06, 0]} args={[0.226, 0.003, 0.168]} radius={0.0008} smoothness={2}>
+          <meshStandardMaterial color="#fbfaf6" {...paper} />
         </RoundedBox>
       </group>
 
       {/* ---- One sheet lying flat, with writing on it ---- */}
-      <group position={[-0.5, DESK_TOP + 0.0015, 0.19]} rotation={[-Math.PI / 2, 0, 0.22]}>
+      <group position={[-0.64, DESK_TOP + 0.0015, 0.42]} rotation={[-Math.PI / 2, 0, 0.2]} scale={PROP * 0.9}>
         <mesh receiveShadow>
           <planeGeometry args={[0.2, 0.15]} />
-          <meshPhysicalMaterial color="#faf8f3" {...paper} />
+          <meshStandardMaterial color="#faf8f3" {...paper} />
         </mesh>
-        {/* Ruled lines of "handwriting". Short, uneven, and stopping well
-            before the right edge, which is what writing looks like from two
-            metres away — evenly full lines read as a printed form. */}
+        {/* Short, uneven lines that stop well before the right edge, which is
+            what handwriting looks like from two metres away. */}
         {[0, 1, 2, 3, 4, 5].map((i) => (
-          <mesh key={i} position={[-0.012 - (i % 2) * 0.008, 0.05 - i * 0.017, 0.001]}>
-            <planeGeometry args={[0.13 - (i % 3) * 0.028, 0.0035]} />
+          <mesh key={i} position={[-0.012 - (i % 2) * 0.008, 0.05 - i * 0.017, 0.0006]}>
+            <planeGeometry args={[0.13 - (i % 3) * 0.028, 0.003]} />
             <meshBasicMaterial color="#8d8a83" />
           </mesh>
         ))}
       </group>
 
+      {/* ---- Notebook and pen ---- */}
+      <group
+        position={[-0.96, DESK_TOP + 0.013, 0.33]}
+        rotation={[0, -0.24, 0]}
+        scale={PROP * 0.85}
+        onPointerOver={() => onHoverProp?.({ label: 'Notebook', hint: 'Where the working out happens' })}
+        onPointerOut={() => onHoverProp?.(null)}
+      >
+        <RoundedBox args={[0.19, 0.018, 0.25]} radius={0.005} smoothness={4} castShadow receiveShadow>
+          <meshPhysicalMaterial color="#7a2f33" {...surfaceWithMaps('softTouch')} />
+        </RoundedBox>
+        <RoundedBox position={[-0.004, 0.0005, 0]} args={[0.176, 0.014, 0.238]} radius={0.0028} smoothness={4}>
+          <meshStandardMaterial color="#efeade" roughness={0.95} />
+        </RoundedBox>
+        {/* Elastic closure band. */}
+        <RoundedBox position={[0.055, 0.0005, 0]} args={[0.006, 0.021, 0.252]} radius={0.0012} smoothness={4}>
+          <meshStandardMaterial color="#2a2c31" roughness={0.9} />
+        </RoundedBox>
+        <group position={[0.01, 0.0145, 0.02]} rotation={[Math.PI / 2, 0, 0.5]}>
+          <mesh castShadow>
+            <cylinderGeometry args={[0.005, 0.005, 0.135, 14]} />
+            <meshStandardMaterial color="#1b2430" roughness={0.35} />
+          </mesh>
+          <mesh position={[0, 0.074, 0]}>
+            <cylinderGeometry args={[0.0045, 0.0015, 0.014, 12]} />
+            <meshStandardMaterial color="#b9bcc4" roughness={0.3} metalness={0.9} />
+          </mesh>
+        </group>
+      </group>
+
       {/* ---- Two ring binders, standing, leaning into each other ---- */}
-      <group position={[0.95, DESK_TOP, -0.2]}>
+      <group position={[0.98, DESK_TOP, -0.33]} rotation={[0, -0.12, 0]} scale={PROP * 0.92}>
         {[
-          { x: 0, tilt: 0.03, c: '#5c4034' },
-          { x: 0.075, tilt: -0.05, c: '#4a332a' },
+          { x: 0, tilt: 0.0, c: '#34373d' },
+          { x: 0.068, tilt: -0.045, c: '#8a3b33' },
         ].map((b) => (
-          <group key={b.x} position={[b.x, 0.14, 0]} rotation={[0, 0, b.tilt]}>
-            <RoundedBox args={[0.058, 0.28, 0.23]} radius={0.006} smoothness={3} castShadow receiveShadow>
-              <meshPhysicalMaterial color={b.c} roughness={0.62} />
+          <group key={b.x} position={[b.x, 0.142, 0]} rotation={[0, 0, b.tilt]}>
+            <RoundedBox args={[0.058, 0.28, 0.23]} radius={0.004} smoothness={3} castShadow receiveShadow>
+              <meshStandardMaterial color={b.c} roughness={0.6} />
             </RoundedBox>
-            {/* The spine label — a pale rectangle is all that resolves, and
-                it is the detail that makes it a binder and not a brick. */}
-            <mesh position={[0, 0.055, 0.116]}>
-              <planeGeometry args={[0.04, 0.09]} />
-              <meshBasicMaterial color="#ddd6c8" />
+            {/* Spine label and finger ring — the two details that make it a
+                binder and not a brick. */}
+            <mesh position={[0, 0.05, 0.1155]}>
+              <planeGeometry args={[0.04, 0.1]} />
+              <meshBasicMaterial color="#e9e4d8" />
+            </mesh>
+            <mesh position={[0, -0.075, 0.1155]}>
+              <ringGeometry args={[0.008, 0.012, 20]} />
+              <meshStandardMaterial color="#c9ccd2" roughness={0.3} metalness={0.9} />
             </mesh>
           </group>
         ))}
       </group>
 
-      {/* ---- Mug, within reach of the keyboard ---- */}
-      <group position={[0.7, DESK_TOP, 0.04]}>
-        <mesh castShadow receiveShadow>
-          <latheGeometry args={[mug, 40]} />
-          <meshPhysicalMaterial color="#eceae4" side={DoubleSide} {...ceramic} />
+      {/* ---- Mug, on a coaster, right of the machine ----
+          Rebuilt. Three things were wrong with the old one beyond its size:
+          the handle was a torus rotated to lie FLAT, so it was a horizontal
+          ring sticking out of the side like a saucer; the coffee was a disc
+          wider than the inside of the cup; and it sat on the mouse. The handle
+          is now a vertical half-ring whose two ends meet the wall, which is
+          the shape a hand actually goes through. */}
+      <group position={[0.74, DESK_TOP, -0.02]} rotation={[0, -0.7, 0]} scale={PROP * 1.1}>
+        {/* Cork coaster. */}
+        <mesh position={[0, 0.003, 0]} receiveShadow>
+          <cylinderGeometry args={[0.058, 0.058, 0.006, 40]} />
+          <meshStandardMaterial color="#a8855c" roughness={0.95} />
         </mesh>
-        {/* Coffee, sitting a little below the rim. */}
-        <mesh position={[0, 0.082, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[0.039, 28]} />
-          <meshPhysicalMaterial color="#2a1a10" roughness={0.16} clearcoat={0.9} />
-        </mesh>
-        <mesh position={[0.052, 0.055, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-          <torusGeometry args={[0.026, 0.0075, 12, 28, Math.PI * 1.25]} />
-          <meshPhysicalMaterial color="#eceae4" {...ceramic} />
-        </mesh>
-      </group>
-
-      {/* ---- Notebook and pen, now actually ON the desk ---- */}
-      <group
-        position={[-0.93, DESK_TOP, 0.26]}
-        rotation={[0, -0.28, 0]}
-        onPointerOver={() => onHoverProp?.({ label: 'Notebook', hint: 'Where the working out happens' })}
-        onPointerOut={() => onHoverProp?.(null)}
-      >
-        <RoundedBox args={[0.19, 0.018, 0.25]} radius={0.005} smoothness={4} castShadow receiveShadow>
-          <meshPhysicalMaterial color="#6f3336" {...surfaceWithMaps('softTouch')} />
-        </RoundedBox>
-        <RoundedBox position={[-0.004, 0.0005, 0]} args={[0.176, 0.014, 0.238]} radius={0.0028} smoothness={4}>
-          <meshPhysicalMaterial color="#efeade" roughness={0.95} />
-        </RoundedBox>
-        <RoundedBox position={[0.055, 0.0005, 0]} args={[0.006, 0.021, 0.252]} radius={0.0012} smoothness={4}>
-          <meshPhysicalMaterial color="#2a2c31" {...surface('rubber')} />
-        </RoundedBox>
-        <group position={[0.02, 0.019, 0.02]} rotation={[0, 0.5, Math.PI / 2]}>
-          <mesh castShadow>
-            <cylinderGeometry args={[0.005, 0.005, 0.135, 14]} />
-            <meshPhysicalMaterial color="#1b2430" {...surface('plastic')} />
+        <group position={[0, 0.006, 0]}>
+          <mesh castShadow receiveShadow>
+            <latheGeometry args={[mug, 48]} />
+            <meshPhysicalMaterial color="#f3f1ec" side={DoubleSide} {...ceramic} />
           </mesh>
-          <mesh position={[0, 0.072, 0]}>
-            <cylinderGeometry args={[0.0045, 0.002, 0.014, 12]} />
-            <meshPhysicalMaterial color="#b9bcc4" {...surface('anodisedAluminium')} />
+          {/* A dipped-glaze band round the foot: one flat colour on white
+              ceramic is the difference between a mug and a prop cylinder. */}
+          <mesh position={[0, 0.021, 0]}>
+            <cylinderGeometry args={[0.0418, 0.0406, 0.03, 48, 1, true]} />
+            <meshPhysicalMaterial color="#c2553c" roughness={0.25} clearcoat={0.7} clearcoatRoughness={0.15} />
+          </mesh>
+          {/* Coffee, a little below the rim and inside the wall. */}
+          <mesh position={[0, 0.078, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <circleGeometry args={[0.0375, 36]} />
+            <meshStandardMaterial color="#2b1a10" roughness={0.12} />
+          </mesh>
+          {/* Handle: a half torus standing upright in the XY plane. A torus
+              sweeps from +X anticlockwise, so rotating it -90deg about Z makes
+              the half-ring bulge toward +X with both ends on the mug wall. */}
+          <mesh position={[0.04, 0.05, 0]} rotation={[0, 0, -Math.PI / 2]} castShadow>
+            <torusGeometry args={[0.026, 0.0068, 14, 28, Math.PI]} />
+            <meshPhysicalMaterial color="#f3f1ec" {...ceramic} />
           </mesh>
         </group>
       </group>
@@ -1502,121 +1541,110 @@ function PCTower({ pcPower = true, onTogglePcPower, onHoverProp }) {
 
 function Plant() {
   const plantRef = useRef()
-  const pot = useMemo(() => planterProfile(), [])
+  const pot = useMemo(() => planterProfile({ rTop: 0.2, rBottom: 0.14, height: 0.36 }), [])
+  const leaf = useMemo(() => leafGeometry(), [])
+  useEffect(() => () => leaf.dispose(), [leaf])
 
-  /* Deterministic layout. Math.random() here would reshuffle the plant on
-     every hot reload, and a plant that rearranges itself is very distracting
-     to work next to. */
-  const leaves = useMemo(
-    () =>
-      Array.from({ length: 11 }, (_, i) => {
-        const angle = (i / 11) * Math.PI * 2 + 0.35
-        const tier = i % 3
+  /* A rubber plant (Ficus elastica): a few upright stems carrying big, dark,
+     glossy leaves that alternate up the stem and angle outward. It is the
+     plant in every well-photographed office for a reason — the leaves are
+     large enough to read as shapes from across a room, and glossy enough to
+     pick up a highlight.
+
+     Everything is deterministic. Math.random() here would reshuffle the plant
+     on every hot reload. */
+  const stems = useMemo(() => {
+    const defs = [
+      { x: 0.0, z: 0.0, h: 1.32, lean: [0.05, -0.03], n: 8 },
+      { x: -0.07, z: 0.05, h: 1.02, lean: [-0.2, 0.1], n: 6 },
+      { x: 0.07, z: -0.04, h: 0.84, lean: [0.22, 0.12], n: 5 },
+    ]
+    return defs.map((d, si) => {
+      const base = new Vector3(d.x, 0.33, d.z)
+      const top = new Vector3(d.x + d.lean[0], 0.33 + d.h, d.z + d.lean[1])
+      const mid = new Vector3(d.x + d.lean[0] * 0.25, 0.33 + d.h * 0.55, d.z + d.lean[1] * 0.25)
+      const curve = new CatmullRomCurve3([base, mid, top])
+      const leaves = Array.from({ length: d.n }, (_, k) => {
+        const t = 0.26 + (k / (d.n - 1)) * 0.74
+        const at = curve.getPoint(t)
+        // Golden-angle spiral, so no two leaves stack above one another.
+        const azimuth = si * 1.9 + k * 2.4
+        const young = k === d.n - 1
         return {
-          angle,
-          tilt: 0.34 + tier * 0.22,
-          len: 0.34 + ((i * 7) % 5) * 0.055,
-          width: 0.085 + (i % 4) * 0.014,
-          droop: 0.1 + tier * 0.07,
-          shade: i % 3,
+          at: [at.x, at.y, at.z],
+          azimuth,
+          // Lower leaves hang closer to horizontal; the newest stands upright.
+          pitch: young ? 0.3 : 1.18 - t * 0.5 + ((k * 7) % 3) * 0.06,
+          len: young ? 0.26 : 0.4 - t * 0.1 + ((k * 5) % 4) * 0.018,
+          tone: (si + k) % 3,
+          young,
         }
-      }),
-    [],
-  )
+      })
+      return { curve, leaves }
+    })
+  }, [])
 
   useFrame((state) => {
     if (!plantRef.current) return
     const t = state.clock.elapsedTime
-    plantRef.current.rotation.y = Math.sin(t * 0.28) * 0.018
-    plantRef.current.rotation.z = Math.sin(t * 0.47 + 1) * 0.007
+    plantRef.current.rotation.y = Math.sin(t * 0.28) * 0.02
+    plantRef.current.rotation.z = Math.sin(t * 0.47 + 1) * 0.006
   })
 
   const ceramic = surfaceWithMaps('ceramic')
+  const GREENS = ['#2f6b3c', '#27592f', '#3a7a45']
+  /* Leaves are thin and let light through, so the side facing away from the
+     key never goes black. A low emissive in the leaf's own hue stands in for
+     real transmission, which is far too expensive per leaf. */
+  const GLOWS = ['#1f4a28', '#1a3f22', '#28572f']
 
   return (
-    <group ref={plantRef} position={[1.85, 0, -0.1]} scale={0.94}>
-      {/* Planter — revolved, with a rolled rim and a recessed foot, so it is a
-          thrown pot rather than a tapered cylinder. */}
+    <group ref={plantRef} position={PLANT_POS}>
+      {/* Planter: matte off-white ceramic with a rolled rim. */}
       <mesh castShadow receiveShadow>
-        <latheGeometry args={[pot, 48]} />
-        <meshPhysicalMaterial color="#e6e2da" side={DoubleSide} {...ceramic} />
+        <latheGeometry args={[pot, 56]} />
+        <meshPhysicalMaterial color="#f1eee8" side={DoubleSide} {...ceramic} roughness={0.42} clearcoat={0.25} />
+      </mesh>
+      <mesh position={[0, 0.325, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[0.185, 36]} />
+        <meshStandardMaterial color="#2b211a" roughness={1} />
       </mesh>
 
-      {/* Soil, dished slightly below the rim. */}
-      <mesh position={[0, 0.286, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[0.155, 32]} />
-        <meshPhysicalMaterial color="#2b211a" roughness={1} />
-      </mesh>
+      {stems.map((st, si) => (
+        <group key={si}>
+          <mesh castShadow>
+            <tubeGeometry args={[st.curve, 20, 0.011, 8, false]} />
+            <meshStandardMaterial color="#5b4a36" roughness={0.8} />
+          </mesh>
 
-      {leaves.map((l, i) => {
-        const xStem = Math.cos(l.angle) * 0.05
-        const zStem = Math.sin(l.angle) * 0.05
-        const xLeaf = Math.cos(l.angle) * (0.05 + l.len * 0.72)
-        const zLeaf = Math.sin(l.angle) * (0.05 + l.len * 0.72)
-        const yLeaf = 0.3 + l.len * 0.6 - l.droop
-
-        const stem = new CatmullRomCurve3([
-          new Vector3(xStem, 0.29, zStem),
-          new Vector3(xStem * 1.5, 0.29 + l.len * 0.55, zStem * 1.5),
-          new Vector3(xLeaf, yLeaf + 0.05, zLeaf),
-        ])
-
-        return (
-          <group key={i}>
-            {/* Stem tapers toward the tip — a constant-radius tube reads as
-                wire, and that is what the old plant looked like. */}
-            <mesh castShadow>
-              <tubeGeometry args={[stem, 18, 0.0055, 10, false]} />
-              <meshPhysicalMaterial color="#7d9a72" roughness={0.72} />
-            </mesh>
-
-            {/* Blade. Flattened and lengthwise-curved, with a visible midrib. */}
-            <group
-              position={[xLeaf, yLeaf, zLeaf]}
-              rotation={[
-                Math.sin(l.angle) * (l.tilt + 0.28),
-                l.angle,
-                -Math.cos(l.angle) * (l.tilt + 0.28),
-              ]}
-            >
-              <mesh scale={[l.width, l.len * 0.95, 0.012]} castShadow>
-                <sphereGeometry args={[1, 20, 14]} />
-                <meshPhysicalMaterial
-                  color={l.shade === 0 ? '#9ab88c' : l.shade === 1 ? '#87a97b' : '#76986a'}
-                  side={DoubleSide}
-                  /* Leaves are TRANSLUCENT, and without saying so the ones
-                     facing away from the key crush to near-black — which is
-                     why half this plant looked dead next to the other half.
-                     A real leaf is a thin membrane: light coming from behind
-                     passes through it, so its shadow side never goes darker
-                     than a dim version of its own colour. Proper transmission
-                     is far too expensive for a scene with this many leaves;
-                     a low emissive in the leaf's own hue is the standard cheap
-                     stand-in and is indistinguishable at this distance. */
-                  emissive={l.shade === 0 ? '#5c7a50' : l.shade === 1 ? '#4f6d45' : '#45613c'}
-                  emissiveIntensity={0.45}
-                  roughness={0.62}
-                  sheen={0.5}
-                  sheenColor="#9aa294"
-                  clearcoat={0.22}
-                  clearcoatRoughness={0.6}
-                />
-              </mesh>
-              {/* Midrib — a real leaf has a spine and it catches the light. */}
-              <mesh scale={[l.width * 0.1, l.len * 0.92, 0.016]}>
-                <sphereGeometry args={[1, 8, 8]} />
-                <meshPhysicalMaterial color="#a8c39b" roughness={0.6} />
-              </mesh>
+          {st.leaves.map((l, k) => (
+            <group key={k} position={l.at} rotation={[0, l.azimuth, 0]}>
+              {/* A short stalk, then the blade. Tilting about X swings the
+                  blade from straight up toward the outside of the plant. */}
+              <group rotation={[l.pitch, 0, 0]}>
+                <mesh position={[0, 0.03, 0]}>
+                  <cylinderGeometry args={[0.004, 0.005, 0.06, 6]} />
+                  <meshStandardMaterial color="#6f8f5a" roughness={0.7} />
+                </mesh>
+                <mesh geometry={leaf} position={[0, 0.055, 0]} scale={[l.len * 0.56, l.len, l.len]} castShadow>
+                  <meshPhysicalMaterial
+                    color={l.young ? '#6ea85a' : GREENS[l.tone]}
+                    emissive={l.young ? '#3f6b33' : GLOWS[l.tone]}
+                    emissiveIntensity={0.55}
+                    side={DoubleSide}
+                    roughness={0.32}
+                    clearcoat={0.5}
+                    clearcoatRoughness={0.3}
+                  />
+                </mesh>
+              </group>
             </group>
-          </group>
-        )
-      })}
+          ))}
+        </group>
+      ))}
     </group>
   )
 }
-
-
-
 
 function PowerStripAndCables() {
   const cables = useMemo(() => {

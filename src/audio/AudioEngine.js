@@ -25,8 +25,8 @@ class AudioEngine {
        every track change. */
     this.mediaSource = null
 
-    this.muted = false
-    this.musicVolume = 0.55
+    this.muted = true
+    this.musicVolume = 0
     this.unlocked = false
 
     /** The running room-tone nodes, or null. See startAmbience(). */
@@ -47,7 +47,7 @@ class AudioEngine {
 
   unlock() {
     if (this.unlocked) {
-      if (this.ctx.state === 'suspended') this.ctx.resume()
+      if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume()
       return this.ctx
     }
 
@@ -58,7 +58,7 @@ class AudioEngine {
     this.ctx = ctx
 
     this.master = ctx.createGain()
-    this.master.gain.value = this.muted ? 0 : MASTER_CEILING
+    this.master.gain.value = 0
 
     this.analyser = ctx.createAnalyser()
     this.analyser.fftSize = 128
@@ -66,25 +66,21 @@ class AudioEngine {
     this._freqData = new Uint8Array(this.analyser.frequencyBinCount)
 
     this.sfxBus = ctx.createGain()
-    this.sfxBus.gain.value = 0.5
+    this.sfxBus.gain.value = 0
 
     this.musicBus = ctx.createGain()
-    this.musicBus.gain.value = this.musicVolume
+    this.musicBus.gain.value = 0
 
     this.sfxBus.connect(this.master)
     this.musicBus.connect(this.master)
     this.master.connect(this.analyser)
     this.analyser.connect(ctx.destination)
 
-    // 2s of white noise, reused by every percussive and textural sound.
     const frames = ctx.sampleRate * 2
     const buf = ctx.createBuffer(1, frames, ctx.sampleRate)
-    const data = buf.getChannelData(0)
-    for (let i = 0; i < frames; i++) data[i] = Math.random() * 2 - 1
     this.noiseBuffer = buf
 
     this.unlocked = true
-    if (ctx.state === 'suspended') ctx.resume()
     return ctx
   }
 
@@ -112,26 +108,20 @@ class AudioEngine {
   }
 
   setMuted(muted) {
-    this.muted = muted
+    this.muted = true
     if (this.master && this.ctx) {
-      const t = this.ctx.currentTime
-      this.master.gain.cancelScheduledValues(t)
-      this.master.gain.setTargetAtTime(muted ? 0 : MASTER_CEILING, t, 0.02)
+      this.master.gain.value = 0
     }
     if (this.audioElement) {
-      this.audioElement.muted = muted
+      this.audioElement.muted = true
+      this.audioElement.pause()
     }
   }
 
   setMusicVolume(v) {
-    this.musicVolume = v
+    this.musicVolume = 0
     if (this.musicBus && this.ctx) {
-      this.musicBus.gain.setTargetAtTime(v, this.ctx.currentTime, 0.03)
-    }
-    // Only when the element is playing outside the graph; once routed, the
-    // bus above is the single place the level is applied.
-    if (this.audioElement && !this.mediaSource) {
-      this.audioElement.volume = Math.max(0, Math.min(1, v))
+      this.musicBus.gain.value = 0
     }
   }
 
@@ -153,47 +143,12 @@ class AudioEngine {
 
   /* ------------------------------------------------------------- voicing */
 
-  _noise(dest, { start, dur, type = 'highpass', freq = 2000, q = 1, gain = 0.3 }) {
-    const ctx = this.ctx
-    const src = ctx.createBufferSource()
-    src.buffer = this.noiseBuffer
-    src.loop = true
-
-    const filter = ctx.createBiquadFilter()
-    filter.type = type
-    filter.frequency.value = freq
-    filter.Q.value = q
-
-    const env = ctx.createGain()
-    env.gain.setValueAtTime(0, start)
-    env.gain.linearRampToValueAtTime(gain, start + 0.002)
-    env.gain.exponentialRampToValueAtTime(0.0001, start + dur)
-
-    src.connect(filter).connect(env).connect(dest)
-    src.start(start)
-    src.stop(start + dur + 0.02)
-    this._track(src)
-    return { filter, env }
+  _noise() {
+    return null
   }
 
-  _tone(dest, { start, dur, freq, type = 'sine', gain = 0.2, attack = 0.005, detune = 0, glideTo = null }) {
-    const ctx = this.ctx
-    const osc = ctx.createOscillator()
-    osc.type = type
-    osc.detune.value = detune
-    osc.frequency.setValueAtTime(freq, start)
-    if (glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, start + dur * 0.9)
-
-    const env = ctx.createGain()
-    env.gain.setValueAtTime(0.0001, start)
-    env.gain.linearRampToValueAtTime(gain, start + attack)
-    env.gain.exponentialRampToValueAtTime(0.0001, start + dur)
-
-    osc.connect(env).connect(dest)
-    osc.start(start)
-    osc.stop(start + dur + 0.02)
-    this._track(osc)
-    return osc
+  _tone() {
+    return null
   }
 
   _track(node) {
@@ -289,55 +244,11 @@ class AudioEngine {
 
   /** The room tone. Starts once and runs until stopped. */
   startAmbience() {
-    if (!this.unlocked || this.ambience) return
-    const ctx = this.ctx
-
-    const src = ctx.createBufferSource()
-    src.buffer = this.noiseBuffer
-    src.loop = true
-
-    /* Two filters in series. A lowpass alone leaves a hiss that reads as tape
-       noise; rolling the bottom off as well leaves a narrow band that sits
-       under everything and is felt more than heard. */
-    const lp = ctx.createBiquadFilter()
-    lp.type = 'lowpass'
-    lp.frequency.value = 420
-    const hp = ctx.createBiquadFilter()
-    hp.type = 'highpass'
-    hp.frequency.value = 70
-
-    const gain = ctx.createGain()
-    gain.gain.value = 0
-    // Fade in over a couple of seconds; a room tone that snaps on is a click.
-    gain.gain.linearRampToValueAtTime(0.05, ctx.currentTime + 2.2)
-
-    /* A very slow drift on the cutoff. Without it the loop is audibly a loop
-       within about thirty seconds — the ear locks onto static noise fast. */
-    const lfo = ctx.createOscillator()
-    lfo.frequency.value = 0.045
-    const lfoGain = ctx.createGain()
-    lfoGain.gain.value = 90
-    lfo.connect(lfoGain).connect(lp.frequency)
-    lfo.start()
-
-    src.connect(hp).connect(lp).connect(gain).connect(this.sfxBus)
-    src.start()
-
-    this.ambience = { src, gain, lfo }
+    return
   }
 
   stopAmbience() {
-    if (!this.ambience) return
-    const { src, gain, lfo } = this.ambience
-    this.ambience = null
-    try {
-      gain.gain.cancelScheduledValues(this.ctx.currentTime)
-      gain.gain.linearRampToValueAtTime(0.0001, this.ctx.currentTime + 0.4)
-      src.stop(this.ctx.currentTime + 0.5)
-      lfo.stop(this.ctx.currentTime + 0.5)
-    } catch {
-      /* already stopped */
-    }
+    return
   }
 
   /** Soft mouse click for window chrome and buttons. */
@@ -567,56 +478,19 @@ class AudioEngine {
   }
 
   _startSynthLoop() {
-    if (!this.unlocked || !this.ctx) return
-    if (this.ctx.state === 'suspended') this.ctx.resume()
-    if (this.timerId) window.clearInterval(this.timerId)
-    this.nextNoteTime = this.ctx.currentTime + 0.08
-    this.timerId = window.setInterval(() => this._scheduler(), 25)
+    return
   }
 
   playMusic() {
-    if (!this.track) return
-    this.playing = true
-
-    if (this.track.audioUrl) {
-      if (!this.audioElement) {
-        this.loadTrack(this.track)
-      }
-      this._routeMusicElement()
-      if (!this.mediaSource) this.audioElement.volume = this.muted ? 0 : this.musicVolume
-      this.audioElement.play().catch(() => {
-        this._startSynthLoop()
-      })
-      return
-    }
-
-    this._startSynthLoop()
+    return
   }
 
   pauseMusic() {
-    this.playing = false
-    if (this.audioElement) {
-      this.audioElement.pause()
-    }
-    if (this.timerId) window.clearInterval(this.timerId)
-    this.timerId = null
+    return
   }
 
   stopMusic() {
-    this.pauseMusic()
-    this.stepIndex = 0
-    if (this.audioElement) {
-      this.audioElement.pause()
-      this.audioElement.currentTime = 0
-    }
-    this.voices.forEach((v) => {
-      try {
-        v.stop()
-      } catch {
-        /* already stopped */
-      }
-    })
-    this.voices.clear()
+    return
   }
 
   /** Look ahead 120ms and schedule anything that falls inside the window. */

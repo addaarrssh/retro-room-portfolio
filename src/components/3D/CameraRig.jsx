@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Vector3 } from 'three'
-import { SCREEN, monitorViewDistance } from './layout'
+import { SCREEN, SEAT_Y, monitorViewDistance } from './layout'
 
 /* ==========================================================================
    CameraRig — the only thing allowed to move the camera.
@@ -39,11 +39,23 @@ import { SCREEN, monitorViewDistance } from './layout'
 const ROOM_TARGET = [0, 0.85, 0]
 
 export const VIEWS = {
-  /* Pulled back room view framing — desk and monitor look small in the middle of room. */
   ROOM: {
-    position: [0, 2.2, 7.2],
+    position: [0, 2.05, 5.9],
     target: ROOM_TARGET,
   },
+}
+
+/* The set — plant, desk, chair — is about 4.3m wide, and it should fill
+   roughly three quarters of the frame on any window shape. A fixed camera
+   distance cannot do that: tuned for a 16:10 laptop it leaves the desk a
+   small island on an ultrawide and crops the chair on a squarer window. So
+   the distance is solved from the aspect ratio, and clamped so a very wide
+   window does not push the camera through the front of the desk. */
+const SET_WIDTH = 5.7
+function roomDistance(fovDeg, aspect) {
+  const halfFov = Math.tan((fovDeg * Math.PI) / 180 / 2)
+  const d = SET_WIDTH / (2 * halfFov * aspect)
+  return Math.min(9.5, Math.max(5.2, d))
 }
 
 const DURATION_IN = 0.85
@@ -64,7 +76,7 @@ const DURATION_OUT = 0.85
    being dragged around behind glass. */
 const PARALLAX_X = 0.85
 const PARALLAX_Y = 0.4
-const PARALLAX_Z = 0.85
+const PARALLAX_Z = 0.7
 
 /* Fraction of the remaining distance closed per second. Low enough that the
    camera trails the pointer noticeably, which is what makes it feel like
@@ -115,7 +127,7 @@ function floatAxis(waves, t) {
    front edge of the desk into frame without losing the sense that you are
    still sitting at it — past about 1.8 it stops being a lean-back and starts
    being a different shot. */
-const RELAX = 1.55
+const RELAX = 1.42
 
 /* How fast the lean between relaxed and flush resolves, per second. This is
    the number that decides whether the interaction feels expensive or twitchy.
@@ -152,9 +164,14 @@ export default function CameraRig({ viewState, screenFocused = false }) {
     return {
       flush,
       relaxed: flush * RELAX,
-      target: [0, SCREEN.y, SCREEN.z],
+      target: [0, SEAT_Y, SCREEN.z],
     }
   }, [camera.fov, size.width, size.height])
+
+  /* Resting room position for this window shape. Held in a ref and read every
+     frame, so a resize re-frames the room without restarting anything. */
+  const roomPos = useRef([...VIEWS.ROOM.position])
+  roomPos.current[2] = roomDistance(camera.fov, size.width / size.height || 16 / 9)
 
   const flight = useRef({
     active: false,
@@ -211,10 +228,10 @@ export default function CameraRig({ viewState, screenFocused = false }) {
        one long push. It also means the flight has one fixed endpoint and cannot
        fight the pointer for control of the final distance. */
     if (goingIn) {
-      f.to.set(0, SCREEN.y, SCREEN.z + monitorView.relaxed)
+      f.to.set(0, SEAT_Y, SCREEN.z + monitorView.relaxed)
       f.toTarget.set(...monitorView.target)
     } else {
-      f.to.set(...VIEWS.ROOM.position)
+      f.to.set(...roomPos.current)
       f.toTarget.set(...VIEWS.ROOM.target)
     }
     f.duration = goingIn ? DURATION_IN : DURATION_OUT
@@ -234,12 +251,12 @@ export default function CameraRig({ viewState, screenFocused = false }) {
     const f = flight.current
     if (f.active) return
     const dist = monitorView.relaxed + (monitorView.flush - monitorView.relaxed) * focus.current
-    camera.position.set(0, SCREEN.y, SCREEN.z + dist)
+    camera.position.set(0, SEAT_Y, SCREEN.z + dist)
     f.target.set(...monitorView.target)
     camera.lookAt(f.target)
   }, [monitorView, viewState, camera])
 
-  useFrame((state, delta) => {
+  const step = (state, delta) => {
     const f = flight.current
 
     if (f.active) {
@@ -292,10 +309,10 @@ export default function CameraRig({ viewState, screenFocused = false }) {
 
       camera.position.set(
         drift.current.x + floatAxis(FLOAT.x, now) * breathe,
-        SCREEN.y + drift.current.y + floatAxis(FLOAT.y, now) * breathe,
+        SEAT_Y + drift.current.y + floatAxis(FLOAT.y, now) * breathe,
         SCREEN.z + dist,
       )
-      f.target.set(drift.current.x * 0.4, SCREEN.y + drift.current.y * 0.3, SCREEN.z)
+      f.target.set(drift.current.x * 0.4, SEAT_Y + drift.current.y * 0.3, SCREEN.z)
       camera.lookAt(f.target)
       return
     }
@@ -318,9 +335,9 @@ export default function CameraRig({ viewState, screenFocused = false }) {
       const t = performance.now() / 1000
 
       camera.position.set(
-        VIEWS.ROOM.position[0] + drift.current.x + floatAxis(FLOAT.x, t),
-        VIEWS.ROOM.position[1] + drift.current.y + floatAxis(FLOAT.y, t),
-        VIEWS.ROOM.position[2] + drift.current.z + floatAxis(FLOAT.z, t),
+        roomPos.current[0] + drift.current.x + floatAxis(FLOAT.x, t),
+        roomPos.current[1] + drift.current.y + floatAxis(FLOAT.y, t),
+        roomPos.current[2] + drift.current.z + floatAxis(FLOAT.z, t),
       )
 
       /* The target follows at a FRACTION of the camera's travel rather than
@@ -337,7 +354,24 @@ export default function CameraRig({ viewState, screenFocused = false }) {
     }
 
     camera.lookAt(f.target)
-  })
+  }
+
+  /* Priority -1, and the matrices are flushed by hand.
+
+     The desktop on the monitor is DOM, positioned by drei's <Html transform>
+     from the camera's world matrix. That component does its sums in its own
+     useFrame — and if it runs BEFORE this one, or reads a matrix three.js has
+     not refreshed yet, it places the desktop where the camera was on the
+     PREVIOUS frame. The result is the desktop visibly swimming against the
+     casing whenever the camera moves, and on a slow machine (where a frame is
+     50ms, not 16) it slides clean off the glass. Running first and updating
+     the matrices immediately means everything downstream sees this frame's
+     camera. A negative priority orders the callback without taking over the
+     render loop, which only a positive one does. */
+  useFrame((state, delta) => {
+    step(state, delta)
+    camera.updateMatrixWorld()
+  }, -1)
 
   return null
 }

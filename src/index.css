@@ -92,8 +92,8 @@ canvas {
     to bottom,
     rgba(0, 0, 0, 0) 0px,
     rgba(0, 0, 0, 0) 2px,
-    rgba(0, 0, 0, 0.11) 3px,
-    rgba(0, 0, 0, 0.11) 4px
+    rgba(0, 0, 0, 0.05) 3px,
+    rgba(0, 0, 0, 0.05) 4px
   );
   z-index: 900;
   mix-blend-mode: multiply;
@@ -321,9 +321,11 @@ canvas {
   letter-spacing: -0.01em;
 }
 
+/* 14px, not 13.5: the screen is drawn at ~0.87 of its virtual size, so this
+   lands near 12 device pixels, the floor for comfortable serif body copy. */
 .showcase-doc {
-  font-size: 13.5px;
-  line-height: 1.5;
+  font-size: 14px;
+  line-height: 1.55;
   text-align: justify;
   hyphens: auto;
 }
@@ -339,21 +341,6 @@ canvas {
 .showcase-doc .showcase-display {
   text-align: left;
   hyphens: none;
-}
-
-.showcase-doc::-webkit-scrollbar {
-  width: 16px;
-}
-.showcase-doc::-webkit-scrollbar-track {
-  background: #dfdfdf;
-}
-.showcase-doc::-webkit-scrollbar-thumb {
-  background: #c0c0c0;
-  box-shadow:
-    inset -1px -1px 0 #000000,
-    inset 1px 1px 0 #ffffff,
-    inset -2px -2px 0 #808080,
-    inset 2px 2px 0 #dfdfdf;
 }
 
 /* ==========================================================================
@@ -482,6 +469,22 @@ canvas {
   font-weight: 400 !important;
 }
 
+.retro-ui button,
+.retro-ui a,
+.retro-ui [role='button'] {
+  cursor: pointer;
+}
+.retro-ui button:hover:not(:disabled),
+.retro-ui [role='button']:hover {
+  background-color: #cbcbcb !important;
+}
+.retro-ui button:focus-visible,
+.retro-ui a:focus-visible,
+.retro-ui [role='button']:focus-visible {
+  outline: 1px dotted #000 !important;
+  outline-offset: -4px;
+}
+
 /* Pressed inverts the bevel, so the button physically sinks in. */
 .retro-ui button:active,
 .retro-ui [role='button']:active {
@@ -528,4 +531,290 @@ canvas {
   background-color: #000 !important;
   color: #c0c0c0 !important;
   border-color: #000 !important;
+}
+
+/* ==========================================================================
+   Windows 95 controls inside the monitor.
+
+   One set of primitives for every clickable thing on the shell — caption
+   buttons, Start, task buttons, the tray, desktop icons, menu items — so
+   they all press the same way:
+
+   · REST is the raised four-tone bevel.
+   · PRESS inverts it, and the contents (.w95-press) shift 1px down-right,
+     which is what makes the control physically sink.
+   · HOVER is a one-step lighter face. Win95 had no hover at all; a visitor
+     who has never used it needs to see what is live, and a single grey step
+     tells them without adding colour the era never had.
+   · FOCUS is the dotted rectangle drawn just inside the bevel — the period
+     focus ring — and only for keyboard focus (:focus-visible).
+
+   Nothing here transitions. Bevels switch in one frame, exactly as they did,
+   and box-shadow is not something to animate inside a 3D-transformed layer.
+   ========================================================================== */
+.w95-btn,
+.w95-cap-btn {
+  background-color: #c0c0c0;
+  color: #000;
+  cursor: pointer;
+  box-shadow:
+    inset -1px -1px 0 #000000,
+    inset 1px 1px 0 #ffffff,
+    inset -2px -2px 0 #808080,
+    inset 2px 2px 0 #dfdfdf;
+  -webkit-tap-highlight-color: transparent;
+}
+.w95-btn:hover,
+.w95-cap-btn:hover {
+  background-color: #cbcbcb;
+}
+.w95-btn:active,
+.w95-btn[data-pressed='true'],
+.w95-cap-btn:active {
+  box-shadow:
+    inset 1px 1px 0 #000000,
+    inset -1px -1px 0 #ffffff,
+    inset 2px 2px 0 #808080,
+    inset -2px -2px 0 #dfdfdf;
+}
+/* The pressed-and-latched task button had a dithered, lighter face. A 1px
+   checkerboard moires at the fractional scale the 3D screen renders at, so
+   this is its average colour instead. */
+.w95-btn[data-pressed='true'] {
+  background-color: #e3e3e3;
+}
+.w95-press {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.w95-btn:active .w95-press,
+.w95-btn[data-pressed='true'] .w95-press,
+.w95-cap-btn:active .w95-press {
+  transform: translate(1px, 1px);
+}
+.w95-btn:focus-visible,
+.w95-cap-btn:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: -4px;
+}
+.w95-cap-btn {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 16px;
+  padding: 0;
+  flex-shrink: 0;
+}
+.w95-cap-btn:focus-visible {
+  outline-offset: -3px;
+}
+
+.w95-tray-btn {
+  -webkit-tap-highlight-color: transparent;
+}
+.w95-tray-btn:hover {
+  background: rgba(255, 255, 255, 0.45);
+}
+.w95-tray-btn:active svg {
+  transform: translate(1px, 1px);
+}
+.w95-tray-btn:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: -1px;
+}
+
+/* Desktop icons. Selected = navy label + blue wash (inline, in DesktopOS);
+   hover is a translucent version of that so it reads as "this will select". */
+.w95-icon {
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.w95-icon:hover .w95-icon-label[data-selected='false'] {
+  background: rgba(0, 0, 128, 0.42);
+}
+.w95-icon:focus-visible .w95-icon-label {
+  outline: 1px dotted #ffffff;
+  outline-offset: 0;
+}
+.w95-icon:active .w95-icon-art {
+  transform: translate(1px, 1px);
+}
+
+/* Start menu. It slides UP out of the taskbar — the wrapper clips it at the
+   taskbar's top edge, so the motion is pure transform and reads as a reveal. */
+@keyframes w95-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.w95-start-menu {
+  animation: w95-slide-up 140ms cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+.w95-menu-item {
+  cursor: pointer;
+  outline: none;
+}
+.w95-menu-item:hover,
+.w95-menu-item:focus-visible {
+  background: #000080;
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   Scrollbars, everywhere inside the monitor: the system furniture, not a
+   thin overlay. 16px gutter, raised thumb, and the two arrow buttons whose
+   absence is what made the old one read as a modern scrollbar painted grey.
+   ========================================================================== */
+[data-os-screen] ::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+  background: #dfdfdf;
+}
+[data-os-screen] ::-webkit-scrollbar-track {
+  background: #dfdfdf;
+}
+[data-os-screen] ::-webkit-scrollbar-thumb {
+  background-color: #c0c0c0;
+  min-height: 24px;
+  box-shadow:
+    inset -1px -1px 0 #000000,
+    inset 1px 1px 0 #ffffff,
+    inset -2px -2px 0 #808080,
+    inset 2px 2px 0 #dfdfdf;
+}
+[data-os-screen] ::-webkit-scrollbar-corner {
+  background: #c0c0c0;
+}
+/* Buttons are matched by position (start/end) rather than :single-button:
+   macOS reports a platform style with NO scrollbar buttons, so
+   :single-button never matches there and the arrows silently vanish. */
+[data-os-screen] ::-webkit-scrollbar-button {
+  display: none;
+}
+[data-os-screen] ::-webkit-scrollbar-button:start:decrement,
+[data-os-screen] ::-webkit-scrollbar-button:end:increment {
+  display: block;
+  width: 16px;
+  height: 16px;
+  background-color: #c0c0c0;
+  background-repeat: no-repeat;
+  background-position: center;
+  box-shadow:
+    inset -1px -1px 0 #000000,
+    inset 1px 1px 0 #ffffff,
+    inset -2px -2px 0 #808080,
+    inset 2px 2px 0 #dfdfdf;
+}
+[data-os-screen] ::-webkit-scrollbar-button:start:decrement:active,
+[data-os-screen] ::-webkit-scrollbar-button:end:increment:active {
+  background-position: calc(50% + 1px) calc(50% + 1px);
+  box-shadow:
+    inset 1px 1px 0 #808080,
+    inset -1px -1px 0 #808080;
+}
+[data-os-screen] ::-webkit-scrollbar-button:vertical:start:decrement {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='4' shape-rendering='crispEdges'%3E%3Cpath d='M3 0h1v1h1v1h1v1h1v1H0V3h1V2h1V1h1z'/%3E%3C/svg%3E");
+}
+[data-os-screen] ::-webkit-scrollbar-button:vertical:end:increment {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='4' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h7v1H6v1H5v1H4v1H3V3H2V2H1V1H0z'/%3E%3C/svg%3E");
+}
+[data-os-screen] ::-webkit-scrollbar-button:horizontal:start:decrement {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='7' shape-rendering='crispEdges'%3E%3Cpath d='M3 0h1v7H3V6H2V5H1V4H0V3h1V2h1V1h1z'/%3E%3C/svg%3E");
+}
+[data-os-screen] ::-webkit-scrollbar-button:horizontal:end:increment {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='7' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h1v1h1v1h1v1h1v1H3v1H2v1H1v1H0z'/%3E%3C/svg%3E");
+}
+
+/* ==========================================================================
+   Showcase page links and page changes.
+
+   Blue-violet and underlined at rest, as before. On hover they go red — the
+   `a:hover { color: red }` that half the personal homepages of 1998 shipped —
+   which is period-correct AND tells a mouse user the text is live. The
+   underline sits a little lower than the browser default so it does not cut
+   the descenders of a serif at this size.
+   ========================================================================== */
+.sc-link {
+  color: #4b0082;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.sc-link:hover {
+  color: #b00000;
+}
+.sc-link:active {
+  color: #ff0000;
+}
+.sc-link:focus-visible,
+.sc-nav:focus-visible,
+.sc-stat:focus-visible {
+  outline: 1px dotted currentColor;
+  outline-offset: 2px;
+}
+
+.sc-nav {
+  cursor: pointer;
+}
+.sc-nav-label {
+  color: #4b0082;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+.sc-nav[aria-current='page'] {
+  cursor: default;
+}
+.sc-nav[aria-current='page'] .sc-nav-label {
+  color: #000;
+  font-weight: 700;
+  text-decoration: none;
+}
+.sc-nav:hover .sc-nav-label {
+  color: #b00000;
+}
+.sc-nav[aria-current='page']:hover .sc-nav-label {
+  color: #000;
+}
+
+.sc-stat {
+  cursor: pointer;
+}
+.sc-stat:hover {
+  border-color: #b00000 !important;
+}
+.sc-stat:hover .sc-link {
+  color: #b00000;
+}
+
+/* A page change is a short fade with a 6px rise — enough to register that
+   the column changed, never enough to feel like a slide deck. */
+@keyframes sc-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.sc-page-in {
+  animation: sc-page-in 170ms cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+
+/* Reduced motion, for the shell's own motion. Declared after the rules it
+   overrides — an earlier @media block of the same specificity would lose.
+   (Window open/close/minimise read the same media query in motion.js.) */
+@media (prefers-reduced-motion: reduce) {
+  .w95-start-menu,
+  .sc-page-in {
+    animation: none;
+  }
 }

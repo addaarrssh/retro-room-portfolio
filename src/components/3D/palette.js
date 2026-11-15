@@ -32,11 +32,17 @@ export const LIGHT = {
      same FAMILY of neutral, so the shot reads as one lit set rather than as a
      cut-out pasted onto a backdrop. The legs stay light because a dark top on
      pale legs is what actually holds a desk up visually. */
-  deskTop: '#6f6b64',
-  deskWood: '#635f59',
-  deskWoodDark: '#55524c',
+  /* Walnut, on graphite legs. The neutral-grey desk described above solved
+     the silhouette problem but left the set with no material in it at all:
+     grey plastic machine on a grey slab on a grey sweep, which photographs as
+     an untextured model. One warm wood surface under a cool-neutral machine is
+     the oldest trick in workspace photography, and it is what makes the beige
+     case read as beige instead of as more grey. */
+  deskTop: '#8a674a',
+  deskWood: '#8f6b4c',
+  deskWoodDark: '#5f4330',
   deskMat: '#5a5751',
-  deskLeg: '#a7a49e',
+  deskLeg: '#2b2b2e',
 
   shelf: '#b2b5c4',
   shelfWood: '#c7c9c0',
@@ -68,19 +74,23 @@ export const DARK = {
   sweepFloor: '#1a1917',
   sweepTop: '#0b0b0c',
 
-  deskTop: '#2a2825',
-  deskWood: '#232120',
-  deskWoodDark: '#1a1918',
-  deskMat: '#141313',
-  deskLeg: '#4a4947',
+  /* The same walnut desk and tan chair as by day. Night is a change of LIGHT,
+     not of furniture: repainting them near-black made the room read as a
+     different, emptier set the moment the toggle was pressed, and a black
+     desk on a black sweep has no silhouette at all. */
+  deskTop: '#8a674a',
+  deskWood: '#8f6b4c',
+  deskWoodDark: '#5f4330',
+  deskMat: '#2a2a2c',
+  deskLeg: '#2b2b2e',
 
   shelf: '#5c4738',
   shelfWood: '#2b1e16',
   shelfWoodDark: '#1a110c',
 
-  chairShell: '#0f0f13',
-  chairAccent: '#6b6a68',
-  chairBase: '#141418',
+  chairShell: '#a97a52',
+  chairAccent: '#8a5f3c',
+  chairBase: '#9b9a9d',
 
   towerBody: '#1a1a1f',
   speaker: '#211e26',

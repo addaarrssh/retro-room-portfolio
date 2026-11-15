@@ -87,22 +87,66 @@ export default function ContactApp() {
         </div>
       </div>
 
-      {/* Official Resume Box */}
+      {/* Official Resumes Box */}
       <div className="mb-6 rounded-lg border border-emerald-500/30 bg-emerald-950/20 p-4">
-        <div className="text-xs text-emerald-400 font-semibold uppercase mb-1">Curriculum Vitae</div>
-        <div className="flex items-center justify-between gap-3 bg-current/[0.05] p-2.5 rounded border border-current/10">
-          <div className="flex items-center gap-2">
-            <FileText size={16} className="text-emerald-400" />
-            <span className="text-xs font-mono opacity-90">Adarsh_Sahu_Resume.pdf</span>
+        <div className="text-xs text-emerald-400 font-semibold uppercase mb-2">Curriculum Vitae (Tailored Resumes)</div>
+        <div className="space-y-2">
+          {/* Data Science */}
+          <div className="flex items-center justify-between gap-3 bg-current/[0.05] p-2.5 rounded border border-current/10">
+            <div className="flex items-center gap-2">
+              <FileText size={16} className="text-emerald-400" />
+              <div>
+                <div className="text-xs font-mono font-bold text-current">Adarsh_Sahu_Resume_DataScience.pdf</div>
+                <div className="text-[10px] text-emerald-400">Data Science & Applied ML (Primary)</div>
+              </div>
+            </div>
+            <a
+              href="/Adarsh_Sahu_Resume_DataScience.pdf"
+              download="Adarsh_Sahu_Resume_DataScience.pdf"
+              className="flex items-center gap-1.5 rounded bg-emerald-600 px-3 py-1 text-xs text-white hover:bg-emerald-500 transition font-bold"
+            >
+              <Download size={13} />
+              <span>DOWNLOAD</span>
+            </a>
           </div>
-          <a
-            href="/Adarsh_Sahu_Resume.pdf"
-            download="Adarsh_Sahu_Resume.pdf"
-            className="flex items-center gap-1.5 rounded bg-emerald-600 px-3 py-1 text-xs text-white hover:bg-emerald-500 transition font-bold"
-          >
-            <Download size={13} />
-            <span>DOWNLOAD</span>
-          </a>
+
+          {/* Operations Research */}
+          <div className="flex items-center justify-between gap-3 bg-current/[0.05] p-2 rounded border border-current/10">
+            <div className="flex items-center gap-2">
+              <FileText size={16} className="text-blue-400" />
+              <div>
+                <div className="text-xs font-mono font-bold text-current">Adarsh_Sahu_Resume_Operations.pdf</div>
+                <div className="text-[10px] opacity-70">Operations Research & SCM Analytics</div>
+              </div>
+            </div>
+            <a
+              href="/Adarsh_Sahu_Resume_Operations.pdf"
+              download="Adarsh_Sahu_Resume_Operations.pdf"
+              className="flex items-center gap-1.5 rounded bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-2.5 py-1 text-xs text-white transition font-semibold"
+            >
+              <Download size={12} />
+              <span>DOWNLOAD</span>
+            </a>
+          </div>
+
+          {/* FMCG Supply Chain */}
+          <div className="flex items-center justify-between gap-3 bg-current/[0.05] p-2 rounded border border-current/10">
+            <div className="flex items-center gap-2">
+              <FileText size={16} className="text-amber-400" />
+              <div>
+                <div className="text-xs font-mono font-bold text-current">Adarsh_Sahu_Resume_FMCG.pdf</div>
+                <div className="text-[10px] opacity-70">FMCG Supply Chain & Milk-Run Fleet Logistics (TCPL)</div>
+              </div>
+            </div>
+            <a
+              href="/Adarsh_Sahu_Resume_FMCG.pdf"
+              download="Adarsh_Sahu_Resume_FMCG.pdf"
+              className="flex items-center gap-1.5 rounded bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-2.5 py-1 text-xs text-white transition font-semibold"
+            >
+              <Download size={12} />
+              <span>DOWNLOAD</span>
+            </a>
+          </div>
         </div>
       </div>
 

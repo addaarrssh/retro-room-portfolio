@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Gamepad2, RotateCcw } from 'lucide-react'
 
 export default function ArcadeApp() {
@@ -107,10 +107,17 @@ export default function ArcadeApp() {
         </div>
       </div>
 
-      {/* Game Board Grid */}
-      <div className="relative border-2 border-emerald-500/40 bg-black rounded p-1 shadow-inner my-auto">
+      {/* Game Board Grid.
+
+          Colours are INLINE here, not Tailwind classes, and that is the fix
+          for a game nobody could play. The Win95 theme (.retro-ui) rewrites
+          every `bg-black`, `bg-emerald-*` and `bg-rose-*` class to system grey
+          with !important — correct for dialogs, fatal for this board: a grey
+          snake chasing grey food across a grey field. Inline styles are
+          outside that reset, so the board keeps its phosphor green on black. */}
+      <div className="relative border-2 p-1 my-auto" style={{ background: '#000' }}>
         <div
-          className="grid gap-[1px] bg-current/[0.06]"
+          className="grid gap-[1px]"
           style={{
             gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
             width: '240px',
@@ -128,15 +135,15 @@ export default function ArcadeApp() {
             return (
               <div
                 key={i}
-                className={`rounded-[1px] ${
-                  isHead
-                    ? 'bg-emerald-400 border border-emerald-200'
+                style={{
+                  background: isHead
+                    ? '#7dff9a'
                     : isSnake
-                    ? 'bg-emerald-600'
-                    : isFood
-                    ? 'bg-rose-500 animate-ping'
-                    : 'bg-current/[0.04]/80'
-                }`}
+                      ? '#22c55e'
+                      : isFood
+                        ? '#ff4d5e'
+                        : '#0b140d',
+                }}
               />
             )
           })}
@@ -144,11 +151,14 @@ export default function ArcadeApp() {
 
         {/* Start / Game Over Overlay */}
         {(!gameStarted || gameOver) && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/85 backdrop-blur-sm p-4 text-center">
-            <h2 className="text-base font-bold text-emerald-400 mb-1">
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center"
+            style={{ background: 'rgba(0,0,0,0.88)', color: '#7dff9a' }}
+          >
+            <h2 className="text-base font-bold mb-1" style={{ color: '#7dff9a' }}>
               {gameOver ? 'GAME OVER!' : 'RETRO ARCADE'}
             </h2>
-            <p className="text-xs opacity-90 mb-4">
+            <p className="text-xs mb-4" style={{ color: '#d6ffe0' }}>
               {gameOver ? `Final Score: ${score}` : 'Use Arrow Keys or WASD to move'}
             </p>
             <button
