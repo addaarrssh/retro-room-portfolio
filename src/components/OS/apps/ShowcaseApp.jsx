@@ -235,7 +235,7 @@ function Home({ onGo }) {
           <h1 className="showcase-display text-[42px] leading-none">{profile.name}</h1>
           <p className="showcase-display mt-1.5 text-[16px]">{profile.role}</p>
           <p className="mt-1 text-[12.5px] italic">
-            {education.degree}, {education.shortName} &middot; {education.startYear}&ndash;{education.endYear}
+            {education.degree} &middot; {education.startYear}&ndash;{education.endYear}
             {profile.location ? ` · ${profile.location}` : ''}
           </p>
         </div>

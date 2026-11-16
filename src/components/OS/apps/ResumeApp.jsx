@@ -17,7 +17,7 @@ const RESUMES = [
     badge: 'Operations',
     filename: 'Adarsh_Sahu_Resume_Operations.pdf',
     url: '/Adarsh_Sahu_Resume_Operations.pdf',
-    description: 'Industrial Engineering, PPC, MILP Optimization, Inventory Pooling, Bottleneck Elimination',
+    description: 'Operations Research, Mathematical Modeling, MILP Optimization, Inventory Pooling, Bottleneck Elimination',
   },
   {
     id: 'fmcg',

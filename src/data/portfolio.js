@@ -10,9 +10,9 @@ export const profile = {
   avatar: '/avatar.jpg',
   role: 'Data Science | Applied Machine Learning | Operations Research',
   positioning:
-    'Undergraduate at NIT Jamshedpur combining applied machine learning, probabilistic risk modeling, statistical analytics, and operations research (OR) — translating statistical algorithms and constrained network optimization into measurable business ROI.',
+    'Student at NIT JSR combining applied machine learning, probabilistic risk modeling, statistical analytics, and operations research (OR) — translating statistical algorithms and constrained network optimization into measurable business ROI.',
   summary:
-    'Undergraduate at NIT Jamshedpur specializing in applied machine learning, dual-propensity classification, selective prediction, and operations research. Combining data science with industrial engineering to optimize credit recovery, transit delays, multi-echelon supply networks, and fleet routing.',
+    'Student at NIT JSR specializing in applied machine learning, dual-propensity classification, selective prediction, and operations research. Combining data science with quantitative optimization to optimize credit recovery, transit delays, multi-echelon supply networks, and fleet routing.',
   location: 'Jamshedpur, Jharkhand, India',
   phone: '92040 88891',
   email: 'adarshprivate678@gmail.com',
@@ -33,7 +33,7 @@ export const disks = [
 ]
 
 export const hardware = [
-  { part: 'CORE', label: 'Python · SQL · C++', detail: 'Computational Engines & Production Workflows' },
+  { part: 'CORE', label: 'Python · SQL · C++', detail: 'Computational Engines & Scalable Workflows' },
   { part: 'ML', label: 'scikit-learn · XGBoost', detail: 'Dual-Propensity Classifiers & Gradient Boosting' },
   { part: 'OPT', label: 'anyLogistix · OR-Tools', detail: 'MILP, CVRPTW & Multi-Echelon Network Solvers' },
   { part: 'DATA', label: 'pandas · NumPy · SciPy', detail: 'Vectorised Analytics, Lag Features & SHAP' },
@@ -42,15 +42,15 @@ export const hardware = [
 
 export const education = {
   institution: 'National Institute of Technology Jamshedpur',
-  shortName: 'NIT Jamshedpur',
-  degree: 'B.Tech, Production and Industrial Engineering',
+  shortName: 'NIT JSR',
+  degree: 'Student at NIT JSR',
   startYear: 2024,
   endYear: 2028,
   cgpa: '7.45',
   location: 'Jamshedpur, Jharkhand',
   coursework:
-    'Operations Research, Probability & Engineering Statistics, Supply Chain Management, Production Planning & Control (PPC), Facility Layout, Statistical Quality Control (SQC), Optimization Theory, Database Systems (DBMS)',
-  note: 'Rigorous quantitative foundation: Operations Research, Probability & Statistics, SCM, and PPC feed directly into machine learning loss functions, constrained optimization, and network modeling.',
+    'Operations Research, Probability & Engineering Statistics, Supply Chain Management, Optimization Theory, Statistical Quality Control (SQC), Facility Layout, Database Systems (DBMS)',
+  note: 'Rigorous quantitative foundation: Operations Research, Probability & Statistics, Supply Chain, and Optimization feed directly into machine learning loss functions, constrained optimization, and network modeling.',
 }
 
 export const stats = [
@@ -89,7 +89,7 @@ export const skillGroups = [
       { name: 'Network Design & Facility Location (anyLogistix)', level: 88 },
       { name: 'Vehicle Routing & Milk-Run Optimization (OR-Tools)', level: 88 },
       { name: 'Inventory Replenishment & Safety Stock Pooling', level: 86 },
-      { name: 'Production Planning & Control (PPC)', level: 84 },
+      { name: 'Capacity Planning & Bottleneck Scheduling', level: 84 },
       { name: 'Cost-to-Serve & Freight Spend Benchmarking', level: 86 },
       { name: 'Commercial Fleet Dispatch & Logistics Operations', level: 88 },
     ],
@@ -179,9 +179,9 @@ export const timeline = [
   },
   {
     year: '2024 – 2028',
-    title: 'B.Tech, Production and Industrial Engineering',
+    title: 'Student at NIT JSR',
     org: 'NIT Jamshedpur',
-    body: 'Operations Research, Engineering Statistics, Supply Chain Management, Production Planning & Control (PPC), Facility Layout, and Engineering Economics. CGPA: 7.45.',
+    body: 'Operations Research, Probability & Statistics, Supply Chain Management, Optimization Theory, Facility Layout, and Engineering Economics. CGPA: 7.45.',
   },
 ]
 
@@ -218,7 +218,7 @@ export const principles = [
 ]
 
 export const aboutParagraphs = [
-  'Undergraduate at NIT Jamshedpur specializing in applied machine learning, probabilistic risk modeling, statistical analytics, and operations research (OR) — translating statistical algorithms and constrained network optimization into measurable business ROI.',
+  'Student at NIT JSR specializing in applied machine learning, probabilistic risk modeling, statistical analytics, and operations research (OR) — translating statistical algorithms and constrained network optimization into measurable business ROI.',
   'I work end-to-end: framing mathematical formulations, engineering robust features, auditing for data leakage, designing evaluations that can actually fail, and translating model outputs into clear operational decisions.',
   'That discipline spans both Data Science and Operations Research: Collections Intelligence decouples Willingness from Ability to Pay across 20,000 delinquent borrowers, delivering an INR 36.97 Crore cash recovery uplift under 30% call capacity constraints. In supply chain, I formulated 3-tier Capacitated Facility Location MILP in anyLogistix/CPLEX delivering 98.2% OTIF and 13.8% TLC savings, and secondary milk-run CVRPTW saving INR 12.5L/month.',
 ]
@@ -321,7 +321,7 @@ export const projects = [
     summary:
       'Modeled item-level daily retail demand across multi-tier hierarchies using Prophet vs XGBoost with sequential lag and rolling features to minimize stockouts.',
     description:
-      'Modeled item-level daily product demand across multi-tier retail hierarchies using multi-year sales, calendar promotions, and price elasticity to minimize stockouts and inventory holding costs. Engineered a sequential feature pipeline with lag variables (shift(1)), rolling-window statistics (7d/28d moving averages), and event flags for seasonal promotional surges. Benchmarked statistical time-series (Prophet) against gradient-boosted trees (XGBoost), evaluating multi-horizon performance via MAE/RMSE to optimize replenishment and production scheduling.',
+      'Modeled item-level daily product demand across multi-tier retail hierarchies using multi-year sales, calendar promotions, and price elasticity to minimize stockouts and inventory holding costs. Engineered a sequential feature pipeline with lag variables (shift(1)), rolling-window statistics (7d/28d moving averages), and event flags for seasonal promotional surges. Benchmarked statistical time-series (Prophet) against gradient-boosted trees (XGBoost), evaluating multi-horizon performance via MAE/RMSE to optimize replenishment and distribution scheduling.',
     metrics: [
       { value: 'XGBoost', label: 'GBDT Model' },
       { value: 'Prophet', label: 'Time-Series' },
