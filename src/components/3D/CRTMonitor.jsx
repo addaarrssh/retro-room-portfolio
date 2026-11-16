@@ -3,6 +3,7 @@ import { Html, RoundedBox } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { AdditiveBlending, DoubleSide, MathUtils } from 'three'
 import { PANEL, SCREEN, SCREEN_HTML_FACTOR, SCREEN_PX } from './layout'
+import { SIT_MS } from './timing'
 import {
   crtBadgeTexture,
   fingerprintTexture,
@@ -125,6 +126,7 @@ export default function CRTMonitor({
   onPendingHandled,
   onScreenFocus,
   entered = true,
+  onHoverMonitor,
 }) {
   const [hovered, setHovered] = useState(false)
   const bezelRef = useRef()
@@ -138,20 +140,7 @@ export default function CRTMonitor({
   const casePlastic = useMemo(() => moldedPlasticTexture(), [])
   const badge = useMemo(() => crtBadgeTexture('Sahu', 'adarsh inc'), [])
 
-  /* Whether a hover is allowed to fly the camera in. Cleared on each trip,
-     restored when the pointer genuinely leaves the monitor. See handleOver. */
-  const armed = useRef(true)
 
-  /* When the visitor got past the BIOS screen. The START button sits in the
-     middle of the window — directly over the monitor — so the pointer is
-     ALREADY on the monitor the moment the room appears, and the first pixel of
-     mouse movement used to count as a hover and fly them straight in. They
-     never saw the room. For the first moments after entry a hover only
-     disarms; the pointer has to leave the monitor and come back deliberately. */
-  const enteredAt = useRef(0)
-  useEffect(() => {
-    if (entered) enteredAt.current = performance.now()
-  }, [entered])
 
   useEffect(() => {
     return () => {
@@ -192,7 +181,7 @@ export default function CRTMonitor({
     if (rippleMaterialRef.current) {
       rippleMaterialRef.current.uniforms.uTime.value = tClock
       if (isZooming) {
-        const elapsed = (performance.now() - zoomStartRef.current) / 850
+        const elapsed = (performance.now() - zoomStartRef.current) / SIT_MS
         const tProgress = Math.max(0, Math.min(1, elapsed))
         const rippleFactor = Math.sin(tProgress * Math.PI)
         rippleMaterialRef.current.uniforms.uProgress.value = rippleFactor
@@ -234,48 +223,39 @@ export default function CRTMonitor({
     }
     if (glowLightRef.current) {
       // Still spills onto the desk, but no longer floods the shot.
-      const target = isZoomed ? 0.35 : 0.6
+      /* A screen's spill only shows against a dark room. In daylight it was
+         painting the keycaps nearest the monitor a cold teal, which read as
+         dirty plastic, not as light. */
+      const base = appearance === 'LIGHT' ? 0.08 : 0.6
+      const target = isZoomed ? base * 0.6 : base
       glowLightRef.current.intensity = MathUtils.lerp(glowLightRef.current.intensity, target, k)
     }
   })
 
-  /* Hovering the monitor sits you down at it. No click.
+  /* Hovering the monitor ANNOUNCES it; clicking sits you down.
 
-     This is the single interaction that makes the room feel like a place
-     rather than a picture with a button on it: you move the pointer toward the
-     screen, the screen comes to you, and you never had to be told that the
-     monitor was the way in. The bottom prompt still says "click anywhere",
-     because clicking anywhere else also works — but nobody who moves their
-     pointer over the display needs to read it.
-
-     The guard matters. Pointer-over fires again on every re-entry, and R3F
-     re-fires it as the geometry moves under a stationary cursor during the
-     flight, so without `interactive` (which is false the moment the state
-     leaves ROOM) this would restart the transition on itself several times a
-     second and the camera would never arrive. */
+     It used to be the other way round: a hover flew the camera in, leaving
+     the glass leaned it back out, and crossing the bezel again flew it in —
+     so an idle mouse set the whole room surging back and forth, and you could
+     not reach the desktop without first being dragged to it. Now the monitor
+     lights its bezel and the cursor becomes a hand; the visit starts when the
+     visitor decides it does. `interactive` is false the moment the state
+     leaves ROOM, so a click mid-flight cannot restart the transition. */
   const handleOver = (e) => {
     e.stopPropagation()
     if (!interactive) return
     setHovered(true)
-
-    if (!entered || performance.now() - enteredAt.current < 2200) {
-      armed.current = false
-      return
-    }
-
-    if (!armed.current) return
-    armed.current = false
-    onClick?.()
+    onHoverMonitor?.(true)
   }
 
   const handleOut = (e) => {
     e.stopPropagation()
     setHovered(false)
-    armed.current = true
+    onHoverMonitor?.(false)
   }
   const handleClick = (e) => {
     e.stopPropagation()
-    if (interactive) onClick?.()
+    if (interactive && entered) onClick?.()
   }
 
   // No-op raycast — makes a mesh invisible to pointer events

@@ -167,6 +167,64 @@ export function bumpNormalMap(kind = 'fine', repeat = 3) {
   return tex
 }
 
+/**
+ * A normal map derived from a painted height field, for grains that are
+ * cells rather than lines: pebbled leather, stippled plastic. The height is
+ * drawn as soft blobs, then differentiated, which is the only way to get a
+ * surface that catches light on one side of each bump and not the other.
+ */
+export function grainNormalMap(kind = 'leather', repeat = 6, strength = 2.2) {
+  const key = `grain:${kind}:${repeat}:${strength}`
+  if (cache.has(key)) return cache.get(key)
+  const S = 256
+  const [c, ctx] = makeCanvas(S, S)
+  ctx.fillStyle = '#808080'
+  ctx.fillRect(0, 0, S, S)
+  let seed = kind === 'leather' ? 19 : 29
+  const rnd = () => {
+    seed = (seed * 16807) % 2147483647
+    return (seed - 1) / 2147483646
+  }
+  const blobs = kind === 'leather' ? 1700 : 3000
+  for (let i = 0; i < blobs; i++) {
+    const x = rnd() * S
+    const y = rnd() * S
+    const r = kind === 'leather' ? 2 + rnd() * 3.5 : 1 + rnd() * 1.6
+    const v = rnd() > 0.5 ? 255 : 0
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r)
+    g.addColorStop(0, `rgba(${v},${v},${v},0.35)`)
+    g.addColorStop(1, `rgba(${v},${v},${v},0)`)
+    ctx.fillStyle = g
+    // Draw wrapped so the tile is seamless.
+    for (const ox of [-S, 0, S]) for (const oy of [-S, 0, S]) {
+      if (x + ox + r < 0 || x + ox - r > S || y + oy + r < 0 || y + oy - r > S) continue
+      ctx.save()
+      ctx.translate(ox, oy)
+      ctx.fillRect(x - r, y - r, r * 2, r * 2)
+      ctx.restore()
+    }
+  }
+  const src = ctx.getImageData(0, 0, S, S).data
+  const out = ctx.createImageData(S, S)
+  const h = (x, y) => src[(((y + S) % S) * S + ((x + S) % S)) * 4] / 255
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const dx = (h(x + 1, y) - h(x - 1, y)) * strength
+      const dy = (h(x, y + 1) - h(x, y - 1)) * strength
+      const len = Math.hypot(dx, dy, 1)
+      const i = (y * S + x) * 4
+      out.data[i] = Math.round(((-dx / len) * 0.5 + 0.5) * 255)
+      out.data[i + 1] = Math.round(((dy / len) * 0.5 + 0.5) * 255)
+      out.data[i + 2] = Math.round(((1 / len) * 0.5 + 0.5) * 255)
+      out.data[i + 3] = 255
+    }
+  }
+  ctx.putImageData(out, 0, 0)
+  const tex = tile(new CanvasTexture(c), repeat)
+  cache.set(key, tex)
+  return tex
+}
+
 /* ----------------------------------------------------------- surfaces */
 
 /**
@@ -238,6 +296,24 @@ const SURFACES = {
     sheenRoughness: 0.7,
   },
 
+  /* Aniline-dyed upholstery leather: a soft sheen and a waxy top coat, never
+     a mirror. Pebble grain comes from grainNormalMap('leather'). */
+  leather: {
+    roughness: 0.5,
+    metalness: 0,
+    clearcoat: 0.22,
+    clearcoatRoughness: 0.55,
+    sheen: 0.35,
+    sheenRoughness: 0.6,
+  },
+
+  /* Uncoated office paper: no specular to speak of. */
+  paper: {
+    roughness: 0.93,
+    metalness: 0,
+    clearcoat: 0,
+  },
+
   /* Mug, planter. */
   ceramic: {
     roughness: 0.18,
@@ -272,6 +348,8 @@ export const SURFACE_MAPS = {
   fabric: { rough: 'weave', normal: 'weave', repeat: 6 },
   ceramic: { rough: 'fine', normal: null, repeat: 2 },
   rubber: { rough: 'fine', normal: 'fine', repeat: 5 },
+  leather: { rough: 'fine', normal: null, grain: 'leather', repeat: 3 },
+  paper: { rough: null, normal: null, repeat: 1 },
   glass: { rough: null, normal: null, repeat: 1 },
 }
 
@@ -287,6 +365,10 @@ export function surfaceWithMaps(kind, overrides = {}) {
   if (cfg.normal) {
     props.normalMap = bumpNormalMap(cfg.normal, cfg.repeat)
     props.normalScale = overrides.normalScale ?? [0.35, 0.35]
+  }
+  if (cfg.grain) {
+    props.normalMap = grainNormalMap(cfg.grain, cfg.repeat)
+    props.normalScale = overrides.normalScale ?? [0.6, 0.6]
   }
   return props
 }

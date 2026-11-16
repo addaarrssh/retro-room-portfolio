@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Download, LogOut, Moon, Sun, Volume2, VolumeX } from 'lucide-react'
 import { profile } from '../../data/portfolio'
 import TypewriterText from './TypewriterText'
@@ -26,6 +26,7 @@ import TypewriterText from './TypewriterText'
 export default function Overlay({
   viewState,
   hoveredProp,
+  monitorHover = false,
   ready,
   muted,
   appearance = 'LIGHT',
@@ -35,6 +36,8 @@ export default function Overlay({
 }) {
   const [mounted, setMounted] = useState(false)
   const [hintDismissed, setHintDismissed] = useState(false)
+  const typedOnce = useRef(false)
+  const shownOnce = useRef(false)
 
   /* A running clock is the cheapest possible signal that the scene is alive
      rather than a still render — it ticks before you have touched anything.
@@ -60,6 +63,15 @@ export default function Overlay({
 
   const isRoom = viewState === 'ROOM'
   const isZoomed = viewState === 'MONITOR_ZOOMED'
+  /* The room HUD belongs to the room. It leaves the moment you start to sit
+     (it used to ride along over the flight and sit on top of the monitor)
+     and comes back as you stand, so it is in place by the time you land. */
+  const showRoomHud = isRoom || viewState === 'ZOOMING_OUT'
+  /* Typed out once, on the first arrival. Retyping the name every time you
+     stood up from the desk made the page look like it was reloading. */
+  if (showRoomHud && ready) shownOnce.current = true
+  else if (shownOnce.current) typedOnce.current = true
+  const animateType = !typedOnce.current
   const isLight = appearance === 'LIGHT'
 
   return (
@@ -75,25 +87,27 @@ export default function Overlay({
           ready ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        {!isZoomed && (
+        {showRoomHud && (
           <>
             <Slab>
-              <TypewriterText
-                text={profile.name}
-                speed={40}
-                delay={200}
-                playSound={false}
-                cursorChar="_"
-              />
+              {animateType ? (
+                <TypewriterText text={profile.name} speed={26} delay={150} playSound={false} cursorChar="_" />
+              ) : (
+                <span className="animate-fade-in">{profile.name}</span>
+              )}
             </Slab>
             <Slab>
-              <TypewriterText
-                text={profile.role}
-                speed={30}
-                delay={200 + profile.name.length * 40 + 150}
-                playSound={false}
-                cursorChar="_"
-              />
+              {animateType ? (
+                <TypewriterText
+                  text={profile.role}
+                  speed={16}
+                  delay={150 + profile.name.length * 26 + 100}
+                  playSound={false}
+                  cursorChar="_"
+                />
+              ) : (
+                <span className="animate-fade-in">{profile.role}</span>
+              )}
             </Slab>
 
             {/* Clock and appearance share one slab */}
@@ -130,7 +144,8 @@ export default function Overlay({
             className="animate-fade-in pointer-events-auto flex items-center gap-2 bg-[#111] px-3 py-1.5 font-mono text-[12px] tracking-wide text-white transition hover:bg-[#222] active:scale-95"
           >
             <LogOut size={12} />
-            <span>ESC</span>
+            <span>Back to room</span>
+            <kbd className="ml-1 border border-white/30 px-1 text-[10px] leading-[14px] text-zinc-300">Esc</kbd>
           </button>
         )}
       </div>
@@ -163,12 +178,16 @@ export default function Overlay({
           prompt rather than a caption. */}
       {isRoom && ready && (
         <div className="flex items-end justify-center gap-4">
+          {/* Says the one thing to do. When the pointer is on the monitor the
+              prompt brightens and names the action, so the hover and the
+              click read as one gesture: point at it, then take the seat. */}
           <div
-            className={`bg-[#111] px-3.5 py-1.5 font-mono text-[13px] tracking-wide text-white transition-opacity duration-500 ${
-              hintDismissed ? 'opacity-45' : 'opacity-100'
+            className={`bg-[#111] px-3.5 py-1.5 font-mono text-[13px] tracking-wide text-white transition-[opacity,transform] duration-300 ${
+              monitorHover ? 'translate-y-[-2px] opacity-100' : hintDismissed ? 'opacity-55' : 'opacity-100'
             }`}
           >
-            Click anywhere to begin <span className="caret">_</span>
+            {monitorHover ? 'Click to sit at the computer' : 'Click anywhere to sit down'}{' '}
+            <span className="caret">_</span>
           </div>
         </div>
       )}

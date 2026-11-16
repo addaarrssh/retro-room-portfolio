@@ -23,28 +23,91 @@ function finish(canvas, { repeat = null, srgb = true } = {}) {
   return tex
 }
 
-/** Warm wood with visible grain */
-export function woodTexture(base = '#4a3527', dark = '#2f2018') {
-  const [c, ctx] = makeCanvas(512, 512)
-  ctx.fillStyle = base
-  ctx.fillRect(0, 0, 512, 512)
+/* ==========================================================================
+   woodTexture — a walnut veneer, drawn the way the tree grew.
 
-  const soft = isLightHex(base)
-  for (let i = 0; i < (soft ? 130 : 220); i++) {
-    const y = Math.random() * 512
-    ctx.strokeStyle = Math.random() > 0.5 ? dark : '#5c422f'
-    ctx.globalAlpha = soft ? 0.03 + Math.random() * 0.05 : 0.06 + Math.random() * 0.16
-    ctx.lineWidth = 0.6 + Math.random() * 2.4
+   The old version was a fill with a hundred random sine strokes: it read as
+   brushed paint. Real flat-sawn walnut has four things, layered:
+   · colour BANDS a few centimetres wide, heartwood darker than sapwood;
+   · long flowing GRAIN lines that bunch together and spread apart;
+   · CATHEDRAL arches, where the saw cut across the growth rings, as nested
+     V/U shapes in the middle of the board;
+   · PORES, tiny dark dashes along the grain, which are what make it look
+     like wood rather than a printed photo of wood at close range.
+   Grain runs along U, i.e. along the long axis of a desk top.
+   ========================================================================== */
+export function woodTexture(base = '#4a3527', dark = '#2f2018') {
+  const W = 1024
+  const H = 512
+  const [c, ctx] = makeCanvas(W, H)
+  ctx.fillStyle = base
+  ctx.fillRect(0, 0, W, H)
+  let seed = 11
+  const rnd = () => {
+    seed = (seed * 16807) % 2147483647
+    return (seed - 1) / 2147483646
+  }
+
+  // 1. Broad colour bands, blurred so they never show an edge.
+  ctx.save()
+  ctx.filter = 'blur(10px)'
+  for (let i = 0; i < 26; i++) {
+    const y = rnd() * H
+    const h = 8 + rnd() * 40
+    ctx.globalAlpha = 0.05 + rnd() * 0.12
+    ctx.fillStyle = rnd() > 0.45 ? dark : '#a98261'
     ctx.beginPath()
-    ctx.moveTo(0, y)
-    for (let x = 0; x <= 512; x += 32) {
-      ctx.lineTo(x, y + Math.sin((x + i * 40) * 0.012) * 5)
+    ctx.moveTo(-20, y)
+    for (let x = -20; x <= W + 20; x += 40) ctx.lineTo(x, y + Math.sin(x * 0.004 + i) * 10)
+    ctx.lineTo(W + 20, y + h)
+    for (let x = W + 20; x >= -20; x -= 40) ctx.lineTo(x, y + h + Math.sin(x * 0.005 + i * 2) * 10)
+    ctx.closePath()
+    ctx.fill()
+  }
+  ctx.restore()
+
+  // 2 + 3. Grain lines, some of them bent into cathedral arches.
+  const arches = [
+    { xc: W * 0.34, yc: H * 0.42, s: W * 0.16 },
+    { xc: W * 0.78, yc: H * 0.7, s: W * 0.12 },
+  ]
+  const lineY = (y0, x, i) => {
+    let y = y0 + Math.sin(x * 0.0035 + i * 0.7) * 6 + Math.sin(x * 0.011 + i) * 1.6
+    for (const a of arches) {
+      const dy = y0 - a.yc
+      if (Math.abs(dy) < 70) {
+        const k = 1 - Math.abs(dy) / 70
+        y += k * 46 * Math.exp(-(((x - a.xc) / (a.s * (0.4 + Math.abs(dy) / 90))) ** 2))
+      }
+    }
+    return y
+  }
+  for (let i = 0; i < 230; i++) {
+    const y0 = rnd() * H
+    ctx.globalAlpha = 0.05 + rnd() * 0.14
+    ctx.strokeStyle = rnd() > 0.25 ? dark : '#b48c69'
+    ctx.lineWidth = 0.5 + rnd() * 1.8
+    ctx.beginPath()
+    for (let x = -10; x <= W + 10; x += 8) {
+      const y = lineY(y0, x, i)
+      if (x === -10) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
     }
     ctx.stroke()
   }
 
+  // 4. Pores.
+  ctx.globalAlpha = 0.35
+  ctx.fillStyle = dark
+  for (let i = 0; i < 5200; i++) {
+    const x = rnd() * W
+    const y0 = rnd() * H
+    const y = lineY(y0, x, (y0 | 0) % 40)
+    ctx.fillRect(x, y, 1.5 + rnd() * 5, 0.8)
+  }
+
   ctx.globalAlpha = 1
-  return finish(c, { repeat: [2, 1] })
+  return finish(c, { repeat: [1, 1] })
 }
 
 /** Low-pile carpet with optional chair roll wear arc */
@@ -138,7 +201,7 @@ export function deskWearTexture() {
    Returned as a tiling greyscale map — mid-grey is the base roughness, so the
    noise is centred on ~0.55 rather than swinging the whole surface.
    ========================================================================== */
-export function moldedPlasticTexture({ size = 512, base = 140, coarse = 16, fine = 26 } = {}) {
+export function moldedPlasticTexture({ size = 512, base = 140, coarse = 16, fine = 26, repeat = 3 } = {}) {
   const [c, ctx] = makeCanvas(size, size)
 
   ctx.fillStyle = `rgb(${base},${base},${base})`
@@ -170,7 +233,7 @@ export function moldedPlasticTexture({ size = 512, base = 140, coarse = 16, fine
   ctx.putImageData(img, 0, 0)
 
   // Linear, not sRGB: this is material data, not colour.
-  return finish(c, { repeat: [3, 3], srgb: false })
+  return finish(c, { repeat: [repeat, repeat], srgb: false })
 }
 
 /* ==========================================================================
@@ -780,4 +843,382 @@ export function groundShadowTexture({ size = 512, strength = 0.5, falloff = 2.1 
 
   ctx.putImageData(img, 0, 0)
   return finish(c, { srgb: false })
+}
+
+/* ==========================================================================
+   keyboardLegendTexture — every legend on the board, on one canvas.
+
+   Laid out on the same unit grid as keyboardModel, so each cap's decal quad
+   samples exactly its own patch. One texture, one draw call, and the text is
+   real type at ~128px per key rather than a blurry decal per cap.
+
+   Period conventions: letters top-left, shifted symbols stacked over the
+   unshifted one, modifier words small, numpad digits with their navigation
+   function underneath. Dark grey, not black — pad-printed legends on beige
+   ABS were never full black.
+   ========================================================================== */
+export function keyboardLegendTexture(model, ppu = 128) {
+  const { keys, decals, bounds } = model
+  const Wc = Math.round((bounds.x1 - bounds.x0) * ppu)
+  const Hc = Math.round((bounds.y1 - bounds.y0) * ppu)
+  const [c, ctx] = makeCanvas(Wc, Hc)
+  ctx.clearRect(0, 0, Wc, Hc)
+  const X = (u) => (u - bounds.x0) * ppu
+  const Y = (u) => (u - bounds.y0) * ppu
+  const ink = '#3b3934'
+  const font = (px, weight = 500) => `${weight} ${Math.round(px)}px "Helvetica Neue", Helvetica, Arial, sans-serif`
+  ctx.fillStyle = ink
+  ctx.textBaseline = 'top'
+
+  for (const k of keys) {
+    if (!k.leg || !k.face) continue
+    const f = k.face
+    const x0 = X(f.x0)
+    const y0 = Y(f.y0)
+    const w = X(f.x1) - x0
+    const h = Y(f.y1) - y0
+    const pad = ppu * 0.08
+    const L = k.leg
+    ctx.textAlign = 'left'
+    if (L.t === 'a') {
+      ctx.font = font(ppu * 0.27)
+      ctx.fillText(L.a, x0 + pad, y0 + pad)
+    } else if (L.t === '2') {
+      ctx.font = font(ppu * 0.22)
+      ctx.fillText(L.top, x0 + pad, y0 + pad)
+      ctx.fillText(L.bot, x0 + pad, y0 + h - pad - ppu * 0.22)
+    } else if (L.t === 'np') {
+      ctx.font = font(ppu * 0.25)
+      ctx.fillText(L.top, x0 + pad, y0 + pad)
+      ctx.font = font(ppu * 0.13)
+      ctx.fillText(L.bot, x0 + pad, y0 + h - pad - ppu * 0.13)
+    } else if (L.t === 'w') {
+      const lines = L.a.split('\n')
+      const big = lines.length === 1 && L.a.length <= 3
+      const px = big ? ppu * (L.align === 'c' ? 0.26 : 0.17) : ppu * 0.12
+      ctx.font = font(px)
+      if (L.align === 'c') {
+        ctx.textAlign = 'center'
+        ctx.fillText(lines[0], x0 + w / 2, y0 + h / 2 - px * 0.55)
+      } else {
+        lines.forEach((ln, i) => ctx.fillText(ln, x0 + pad, y0 + pad + i * px * 1.12))
+      }
+    }
+  }
+
+  for (const d of decals) {
+    const x0 = X(d.x0)
+    const y0 = Y(d.y0)
+    const w = X(d.x1) - x0
+    const h = Y(d.y1) - y0
+    if (d.kind === 'leds') {
+      // Three captions over three windows, with the period pictograms.
+      const labels = [
+        ['Num', 'Lock'],
+        ['Caps', 'Lock'],
+        ['Scroll', 'Lock'],
+      ]
+      ctx.font = font(ppu * 0.11)
+      ctx.textAlign = 'center'
+      labels.forEach((l, i) => {
+        const cx = x0 + (w * (i + 0.5)) / 3
+        ctx.fillText(l[0], cx, y0 + h * 0.08)
+        ctx.fillText(l[1], cx, y0 + h * 0.08 + ppu * 0.12)
+      })
+      // A recessed dark strip the windows sit in.
+      ctx.fillStyle = 'rgba(40,38,34,0.85)'
+      roundRect(ctx, x0 + w * 0.06, y0 + h * 0.5, w * 0.88, h * 0.26, ppu * 0.05)
+      ctx.fill()
+      ctx.fillStyle = ink
+    } else if (d.kind === 'badge') {
+      // Dark grey nameplate with a silver logotype, matching the monitor.
+      const g = ctx.createLinearGradient(0, y0, 0, y0 + h)
+      g.addColorStop(0, '#4a4945')
+      g.addColorStop(1, '#2f2e2b')
+      ctx.fillStyle = g
+      roundRect(ctx, x0, y0, w, h, ppu * 0.06)
+      ctx.fill()
+      ctx.fillStyle = '#d9d6cf'
+      ctx.textAlign = 'left'
+      ctx.font = `italic 700 ${Math.round(h * 0.52)}px Georgia, "Times New Roman", serif`
+      ctx.fillText('Sahu', x0 + h * 0.32, y0 + h * 0.2)
+      ctx.font = font(h * 0.2, 500)
+      ctx.fillStyle = '#a9a69e'
+      ctx.textAlign = 'right'
+      ctx.fillText('ENHANCED', x0 + w - h * 0.25, y0 + h * 0.3)
+      ctx.fillText('KEYBOARD', x0 + w - h * 0.25, y0 + h * 0.55)
+      ctx.fillStyle = ink
+    }
+  }
+
+  const tex = finish(c)
+  tex.anisotropy = 16
+  return tex
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.lineTo(x + w - r, y)
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r)
+  ctx.lineTo(x + w, y + h - r)
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
+  ctx.lineTo(x + r, y + h)
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r)
+  ctx.lineTo(x, y + r)
+  ctx.quadraticCurveTo(x, y, x + r, y)
+  ctx.closePath()
+}
+
+/** Seeded random for the texture generators below, so hot reload is stable. */
+function seeded(seed) {
+  let s = seed % 2147483647
+  if (s <= 0) s += 2147483646
+  return () => {
+    s = (s * 16807) % 2147483647
+    return (s - 1) / 2147483646
+  }
+}
+
+/* ==========================================================================
+   fabricTexture — the cloth face of a mousepad.
+
+   A fine plain weave: alternating over/under threads, each with a little
+   tone of its own, and a faint low-frequency mottle so it does not look
+   printed. Tiles; the caller sets repeat in metres-per-tile.
+   ========================================================================== */
+export function fabricTexture(base = '#30343b', size = 256) {
+  const [c, ctx] = makeCanvas(size, size)
+  ctx.fillStyle = base
+  ctx.fillRect(0, 0, size, size)
+  const rnd = seeded(5)
+  const step = 4
+  for (let y = 0; y < size; y += step) {
+    for (let x = 0; x < size; x += step) {
+      const over = ((x + y) / step) % 2 === 0
+      const v = (rnd() - 0.5) * 0.06
+      ctx.fillStyle = over ? `rgba(255,255,255,${0.05 + v})` : `rgba(0,0,0,${0.12 + v})`
+      if (over) ctx.fillRect(x, y + 0.5, step, step - 1)
+      else ctx.fillRect(x + 0.5, y, step - 1, step)
+    }
+  }
+  return finish(c, { repeat: [1, 1] })
+}
+
+/** A run of stitches, for a tube's U axis: thread, gap, thread, gap. */
+export function stitchTexture(thread = '#8d9097', ground = '#1d1f23') {
+  const [c, ctx] = makeCanvas(64, 16)
+  ctx.fillStyle = ground
+  ctx.fillRect(0, 0, 64, 16)
+  ctx.fillStyle = thread
+  for (let x = 0; x < 64; x += 16) {
+    ctx.fillRect(x + 2, 0, 11, 16)
+  }
+  return finish(c, { repeat: [1, 1] })
+}
+
+/* ==========================================================================
+   Paper. A loose sheet with handwriting, the top page of a printout, and the
+   edge of a page block.
+   ========================================================================== */
+export function handwrittenSheetTexture() {
+  const W = 512
+  const H = 384
+  const [c, ctx] = makeCanvas(W, H)
+  ctx.fillStyle = '#f7f5ef'
+  ctx.fillRect(0, 0, W, H)
+  const rnd = seeded(23)
+  // Faint ruling and a margin, like a sheet torn from a pad.
+  ctx.strokeStyle = 'rgba(120,150,190,0.28)'
+  ctx.lineWidth = 1
+  for (let y = 46; y < H; y += 24) {
+    ctx.beginPath()
+    ctx.moveTo(0, y)
+    ctx.lineTo(W, y)
+    ctx.stroke()
+  }
+  ctx.strokeStyle = 'rgba(210,110,110,0.35)'
+  ctx.beginPath()
+  ctx.moveTo(52, 0)
+  ctx.lineTo(52, H)
+  ctx.stroke()
+  // Words as joined loops of ink: illegible from a metre away, which is
+  // exactly what handwriting is.
+  ctx.strokeStyle = 'rgba(30,45,95,0.85)'
+  ctx.lineWidth = 1.5
+  ctx.lineCap = 'round'
+  for (let row = 0; row < 11; row++) {
+    const yb = 42 + row * 24
+    let x = 62 + (row === 0 ? 0 : rnd() * 10)
+    const end = row % 4 === 3 ? 260 + rnd() * 120 : 430 + rnd() * 50
+    while (x < end) {
+      const len = 18 + rnd() * 46
+      ctx.beginPath()
+      ctx.moveTo(x, yb)
+      for (let t = 0; t < len; t += 2.2) {
+        const px = x + t
+        const py = yb - 4 - Math.abs(Math.sin(t * 0.55 + row)) * (5 + (rnd() > 0.85 ? 7 : 0))
+        ctx.lineTo(px, py + Math.sin(t * 1.3) * 1.2)
+      }
+      ctx.stroke()
+      x += len + 7 + rnd() * 6
+    }
+  }
+  // A boxed sum and an underline — the working out.
+  ctx.lineWidth = 1.8
+  ctx.strokeRect(300, 300, 120, 38)
+  ctx.beginPath()
+  ctx.moveTo(62, 70)
+  ctx.lineTo(200, 69)
+  ctx.stroke()
+  return finish(c)
+}
+
+export function printedPageTexture() {
+  const W = 512
+  const H = 680
+  const [c, ctx] = makeCanvas(W, H)
+  ctx.fillStyle = '#fbfaf6'
+  ctx.fillRect(0, 0, W, H)
+  const rnd = seeded(41)
+  ctx.fillStyle = 'rgba(40,40,40,0.82)'
+  ctx.fillRect(48, 52, 220, 14)
+  ctx.fillStyle = 'rgba(40,40,40,0.5)'
+  ctx.fillRect(48, 76, 150, 7)
+  let y = 112
+  while (y < H - 60) {
+    const lines = 3 + Math.floor(rnd() * 5)
+    for (let i = 0; i < lines && y < H - 60; i++) {
+      const w = i === lines - 1 ? 120 + rnd() * 200 : 400 + rnd() * 16
+      ctx.fillStyle = 'rgba(45,45,45,0.42)'
+      // Words, not a bar: break each line into runs.
+      let x = 48
+      while (x < 48 + w) {
+        const ww = 12 + rnd() * 38
+        ctx.fillRect(x, y, Math.min(ww, 48 + w - x), 5)
+        x += ww + 5
+      }
+      y += 13
+    }
+    y += 14
+  }
+  ctx.fillStyle = 'rgba(45,45,45,0.35)'
+  ctx.fillRect(W / 2 - 8, H - 40, 16, 6)
+  return finish(c)
+}
+
+/** The edge of a page block: tight, slightly uneven lines. */
+export function pageEdgeTexture() {
+  const [c, ctx] = makeCanvas(64, 256)
+  ctx.fillStyle = '#efe9da'
+  ctx.fillRect(0, 0, 64, 256)
+  const rnd = seeded(9)
+  for (let y = 0; y < 256; y += 2) {
+    ctx.fillStyle = `rgba(120,105,80,${0.08 + rnd() * 0.14})`
+    ctx.fillRect(0, y, 64, 1)
+  }
+  return finish(c, { repeat: [1, 1] })
+}
+
+/** A typed spine label for a lever-arch file. */
+export function binderLabelTexture(title = 'ACCOUNTS', year = '1996') {
+  const [c, ctx] = makeCanvas(128, 320)
+  ctx.fillStyle = '#f2ecdc'
+  ctx.fillRect(0, 0, 128, 320)
+  ctx.strokeStyle = 'rgba(60,60,60,0.5)'
+  ctx.lineWidth = 2
+  ctx.strokeRect(8, 8, 112, 304)
+  ctx.fillStyle = '#2b2a28'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.font = '700 22px "Helvetica Neue", Helvetica, Arial, sans-serif'
+  title.split('').forEach((ch, i) => ctx.fillText(ch, 64, 40 + i * 24))
+  ctx.font = '600 26px "Courier New", monospace'
+  ctx.fillText(year, 64, 280)
+  return finish(c)
+}
+
+/* ==========================================================================
+   Plant materials: a leaf's veining and the soil it grows from.
+   ========================================================================== */
+export function leafTexture() {
+  const W = 128
+  const H = 256
+  const [c, ctx] = makeCanvas(W, H)
+  // Near-white so the material colour sets the hue; the map only carries
+  // the light midrib, the paler lateral veins and a slight mottle.
+  ctx.fillStyle = '#d8d8d8'
+  ctx.fillRect(0, 0, W, H)
+  const rnd = seeded(17)
+  ctx.save()
+  ctx.filter = 'blur(6px)'
+  for (let i = 0; i < 40; i++) {
+    ctx.fillStyle = rnd() > 0.5 ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
+    ctx.beginPath()
+    ctx.arc(rnd() * W, rnd() * H, 6 + rnd() * 16, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.restore()
+  // Lateral veins, angled up toward the tip (v=1 is the tip; canvas y=0).
+  ctx.strokeStyle = 'rgba(255,255,240,0.55)'
+  ctx.lineWidth = 1.2
+  for (let y = 20; y < H - 6; y += 11) {
+    for (const side of [-1, 1]) {
+      ctx.beginPath()
+      ctx.moveTo(W / 2, y)
+      ctx.quadraticCurveTo(W / 2 + side * 26, y - 10, W / 2 + side * 62, y - 26)
+      ctx.stroke()
+    }
+  }
+  // Midrib.
+  const g = ctx.createLinearGradient(0, 0, 0, H)
+  g.addColorStop(0, 'rgba(255,255,235,0.6)')
+  g.addColorStop(1, 'rgba(255,250,225,1)')
+  ctx.strokeStyle = g
+  ctx.lineWidth = 3.2
+  ctx.beginPath()
+  ctx.moveTo(W / 2, H)
+  ctx.lineTo(W / 2, 0)
+  ctx.stroke()
+  return finish(c)
+}
+
+export function soilTexture() {
+  const S = 256
+  const [c, ctx] = makeCanvas(S, S)
+  ctx.fillStyle = '#2e2219'
+  ctx.fillRect(0, 0, S, S)
+  const rnd = seeded(31)
+  for (let i = 0; i < 2600; i++) {
+    const v = rnd()
+    ctx.fillStyle = v > 0.97 ? 'rgba(225,220,205,0.9)' : v > 0.6 ? 'rgba(80,60,44,0.7)' : 'rgba(10,6,4,0.55)'
+    const s = v > 0.97 ? 1.5 + rnd() * 2 : 0.8 + rnd() * 2.6
+    ctx.beginPath()
+    ctx.arc(rnd() * S, rnd() * S, s, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  // A few slivers of bark mulch.
+  for (let i = 0; i < 40; i++) {
+    ctx.save()
+    ctx.translate(rnd() * S, rnd() * S)
+    ctx.rotate(rnd() * Math.PI)
+    ctx.fillStyle = `rgba(${90 + rnd() * 40},${60 + rnd() * 25},${38 + rnd() * 15},0.9)`
+    ctx.fillRect(-5, -1.5, 8 + rnd() * 8, 3)
+    ctx.restore()
+  }
+  return finish(c)
+}
+
+export function corkTexture() {
+  const S = 256
+  const [c, ctx] = makeCanvas(S, S)
+  ctx.fillStyle = '#b08c62'
+  ctx.fillRect(0, 0, S, S)
+  const rnd = seeded(13)
+  for (let i = 0; i < 4200; i++) {
+    const v = rnd()
+    ctx.fillStyle = v > 0.55 ? 'rgba(90,60,30,0.45)' : 'rgba(230,200,150,0.35)'
+    ctx.fillRect(rnd() * S, rnd() * S, 1 + rnd() * 2.5, 1 + rnd() * 2.5)
+  }
+  return finish(c)
 }

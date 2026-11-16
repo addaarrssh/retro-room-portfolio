@@ -6,6 +6,7 @@ import PhotoMode from './components/UI/PhotoMode'
 import { useDevice } from './hooks/useDevice'
 import { useWindowManager } from './hooks/useWindowManager'
 import audio from './audio/AudioEngine'
+import { SIT_MS, STAND_MS } from './components/3D/timing'
 
 /* The 3D scene is its own chunk. three.js, the fibre renderer, drei and the
    post-processing library are roughly a megabyte of JavaScript between them,
@@ -75,10 +76,14 @@ export default function App() {
   const [pendingApp, setPendingApp] = useState(null)
   const [hoveredProp, setHoveredProp] = useState(null)
 
-  /* Whether the pointer is on the glass. Reported by the desktop's own root
-     element rather than by a raycast — see DesktopOS. Drives how far the
-     camera leans in while seated. */
-  const [screenFocused, setScreenFocused] = useState(false)
+  /* Whether the pointer is over the monitor in the room view. Drives the
+     prompt at the bottom of the frame, which changes from a general
+     invitation to the one action available. */
+  const [monitorHover, setMonitorHover] = useState(false)
+
+  /* The BIOS screen stays mounted while it fades, so the room can be revealed
+     UNDER it by the camera's intro glide instead of appearing with a cut. */
+  const [loaderGone, setLoaderGone] = useState(false)
 
   /* One appearance drives both worlds: the room's materials and lighting, and
      the desktop's chrome. Splitting them would let you end up with a sunlit
@@ -175,12 +180,13 @@ export default function App() {
     audio.setMuted(muted)
 
     setViewState('ZOOMING_IN')
+    setMonitorHover(false)
 
     window.clearTimeout(transitionRef.current)
     transitionRef.current = window.setTimeout(() => {
       setViewState('MONITOR_ZOOMED')
       audio.powerOn()
-    }, 850)
+    }, SIT_MS)
   }, [viewState, muted])
 
   /* Clicking an object in the room flies to the desk and opens what that
@@ -200,7 +206,7 @@ export default function App() {
     setViewState('ZOOMING_OUT')
 
     window.clearTimeout(transitionRef.current)
-    transitionRef.current = window.setTimeout(() => setViewState('ROOM'), 850)
+    transitionRef.current = window.setTimeout(() => setViewState('ROOM'), STAND_MS)
   }, [viewState])
 
   useEffect(() => () => window.clearTimeout(transitionRef.current), [])
@@ -316,21 +322,12 @@ export default function App() {
         return
       }
 
-      /* Clicking the room while seated stands you up.
-
-         `[data-os-screen]` is the boundary. Everything inside it is the
-         machine — the desktop is a real DOM tree, so a click on a window, an
-         icon or the taskbar lands on an element inside that subtree and must
-         be left entirely alone. A click that reaches here from anywhere else
-         landed on the room: the desk, the sweep, the casing around the glass.
-         That is the same gesture as pushing your chair back, so it is what it
-         does. Without this the only way out was the ESC key, which is not a
-         thing most visitors will try. */
-      if (viewState === 'MONITOR_ZOOMED' && !e.target.closest?.('[data-os-screen]')) {
-        zoomToRoom()
-      }
+      /* Seated, a stray click on the bezel or the desk does nothing. It used
+         to stand you up, and since the monitor fills most of the frame that
+         meant one slightly-off click on a window's edge threw you back across
+         the room mid-read. Standing up is the labelled button or Esc. */
     },
-    [viewState, zoomToMonitor, zoomToRoom, entered],
+    [viewState, zoomToMonitor, entered],
   )
 
   const toggleMute = useCallback(() => {
@@ -364,8 +361,7 @@ export default function App() {
         onToggleLamp={toggleLamp}
         onTogglePcPower={togglePcPower}
         onMonitorClick={zoomToMonitor}
-        screenFocused={screenFocused}
-        onScreenFocus={setScreenFocused}
+        onHoverMonitor={setMonitorHover}
         onOpenApp={openFromRoom}
         onHoverProp={setHoveredProp}
         pendingApp={pendingApp}
@@ -382,7 +378,8 @@ export default function App() {
         <Overlay
           viewState={viewState}
           hoveredProp={hoveredProp}
-          ready={entered}
+          monitorHover={monitorHover}
+          ready={loaderGone}
           muted={muted}
           roomTheme={roomTheme}
           appearance={appearance}
@@ -399,7 +396,9 @@ export default function App() {
         onTakeSnap={handleTakeSnap}
       />
 
-      {!entered && <LoadingScreen ready={ready} onEnter={enterRoom} />}
+      {!loaderGone && (
+        <LoadingScreen ready={ready} onEnter={enterRoom} onGone={() => setLoaderGone(true)} />
+      )}
     </div>
   )
 }

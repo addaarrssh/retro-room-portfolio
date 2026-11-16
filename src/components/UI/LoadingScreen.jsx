@@ -32,17 +32,17 @@ import { profile } from '../../data/portfolio'
    memory count that is far too small to be true. */
 const BIOS_HEAD = [
   { text: 'Sahu,', delay: 0 },
-  { text: 'Adarsh Inc.', delay: 90 },
-  { text: 'Released: 05/08/2005', delay: 180 },
-  { text: '', delay: 240 },
-  { text: 'ASBIOS (C)2005 Sahu Adarsh Inc.,', delay: 320 },
-  { text: '', delay: 380 },
-  { text: 'ASP S07 2005-2026 Special UC072S', delay: 460 },
-  { text: '', delay: 520 },
-  { text: 'ASP Showcase(tm) XX 072', delay: 600 },
-  { text: '', delay: 660 },
-  { text: 'Checking RAM : 14000 OK', delay: 760 },
-  { text: '', delay: 820 },
+  { text: 'Adarsh Inc.', delay: 45 },
+  { text: 'Released: 05/08/2005', delay: 90 },
+  { text: '', delay: 120 },
+  { text: 'ASBIOS (C)2005 Sahu Adarsh Inc.,', delay: 160 },
+  { text: '', delay: 190 },
+  { text: 'ASP S07 2005-2026 Special UC072S', delay: 230 },
+  { text: '', delay: 260 },
+  { text: 'ASP Showcase(tm) XX 072', delay: 300 },
+  { text: '', delay: 330 },
+  { text: 'Checking RAM : 14000 OK', delay: 380 },
+  { text: '', delay: 410 },
 ]
 
 /* The resource manifest. These are the actual things the scene builds, which
@@ -58,10 +58,11 @@ const RESOURCES = [
   'virtualDisplay',
 ]
 
-const HEAD_MS = 300
-const RES_STEP = 35
+const FADE_MS = 900
+const HEAD_MS = 160
+const RES_STEP = 22
 
-export default function LoadingScreen({ ready, onEnter }) {
+export default function LoadingScreen({ ready, onEnter, onGone }) {
   const [tick, setTick] = useState(0)
   const [dismissing, setDismissing] = useState(false)
   const startRef = useRef(performance.now())
@@ -101,10 +102,16 @@ export default function LoadingScreen({ ready, onEnter }) {
     return `${p(d.getMonth() + 1)}/${p(d.getDate())}/${d.getFullYear()}`
   }, [])
 
+  /* START hands over at once: the room's intro glide begins on the same click,
+     and this screen dissolves over it, so what the visitor sees is the room
+     arriving out of the dark rather than a black screen cutting to a still.
+     The unmount is on a timer, not transitionend — an event that never fires
+     in a background tab would leave an invisible layer eating every click. */
   const handleStart = () => {
     if (dismissing) return
     setDismissing(true)
-    timers.current.push(setTimeout(() => onEnter(), 240))
+    onEnter()
+    timers.current.push(setTimeout(() => onGone?.(), FADE_MS + 60))
   }
 
   /* ENTER is the keyboard equivalent of clicking START, and it counts as the
@@ -126,7 +133,8 @@ export default function LoadingScreen({ ready, onEnter }) {
   return (
     <div
       onClick={complete ? handleStart : undefined}
-      className={`absolute inset-0 z-[100] cursor-pointer overflow-hidden bg-black transition-opacity duration-200 ${
+      style={{ transitionDuration: `${FADE_MS}ms`, transitionTimingFunction: 'cubic-bezier(.4,0,.2,1)' }}
+      className={`absolute inset-0 z-[100] cursor-pointer overflow-hidden bg-black transition-opacity ${
         dismissing ? 'pointer-events-none opacity-0' : 'opacity-100'
       }`}
     >

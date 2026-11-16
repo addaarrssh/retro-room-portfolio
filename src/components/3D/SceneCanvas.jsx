@@ -103,8 +103,8 @@ export default function SceneCanvas({
   onToggleLamp,
   onTogglePcPower,
   onMonitorClick,
-  screenFocused,
   onScreenFocus,
+  onHoverMonitor,
   onOpenApp,
   onHoverProp,
   pendingApp,
@@ -289,6 +289,7 @@ export default function SceneCanvas({
           onPendingHandled={onPendingHandled}
           onScreenFocus={onScreenFocus}
           entered={entered}
+          onHoverMonitor={onHoverMonitor}
         />
 
         {/* Compile every material up front so the first camera move does not
@@ -296,7 +297,7 @@ export default function SceneCanvas({
         <Preload all />
       </Suspense>
 
-      <CameraRig viewState={viewState} screenFocused={screenFocused} />
+      <CameraRig viewState={viewState} entered={entered} />
 
       {/* The composer gets its own boundary. Effects that fetch lookup
           textures suspend, and an unbounded suspend in here takes the whole

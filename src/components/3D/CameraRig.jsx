@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Vector3 } from 'three'
 import { SCREEN, SEAT_Y, monitorViewDistance } from './layout'
+import { INTRO_MS, SIT_MS, STAND_MS } from './timing'
 
 /* ==========================================================================
    CameraRig — the only thing allowed to move the camera.
@@ -58,8 +59,6 @@ function roomDistance(fovDeg, aspect) {
   return Math.min(9.5, Math.max(5.2, d))
 }
 
-const DURATION_IN = 0.85
-const DURATION_OUT = 0.85
 
 /* How far the shot travels, in metres, at full pointer deflection.
 
@@ -122,48 +121,63 @@ function floatAxis(waves, t) {
   return v
 }
 
-/* How far back the relaxed desk view sits, as a multiple of the flush
-   distance. 1.55 is enough to bring the monitor's casing, the keyboard and the
-   front edge of the desk into frame without losing the sense that you are
-   still sitting at it — past about 1.8 it stops being a lean-back and starts
-   being a different shot. */
-const RELAX = 1.42
+/* ---------------------------------------------------------------- flights
 
-/* How fast the lean between relaxed and flush resolves, per second. This is
-   the number that decides whether the interaction feels expensive or twitchy.
-   Too high and the camera snaps the instant the pointer crosses the bezel,
-   which is jarring because the pointer crosses it constantly; too low and the
-   screen is still arriving when you have already started reading. */
-const FOCUS_EASE = 1.6
+   Every flight — the reveal after START, sitting down, standing up — is the
+   same move: a camera travelling from one framed shot to another. Two things
+   make it read as a camera operator rather than as a lerp.
 
-/* Quintic easing — much silkier than cubic. The higher exponent means the
-   acceleration at the start is gentler and the deceleration at the end lingers
-   longer, which is what makes a flight feel expensive rather than mechanical. */
-const easeInOutQuintic = (t) => (t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2)
-const easeOutQuintic = (t) => 1 - Math.pow(1 - t, 5)
+   · DISTANCE IS INTERPOLATED IN LOG SPACE. A straight lerp from six metres to
+     forty centimetres covers most of its distance in the first half, so the
+     approach looks like a lunge followed by a crawl. Moving the log of the
+     distance at a steady rate gives a constant APPARENT speed — the screen
+     grows in frame at the same rate all the way in — which is how a dolly on
+     a long lens feels.
+   · THE AIM LEADS THE BODY. The look-at point settles a little ahead of the
+     position, so the camera turns to face what it is going to before it has
+     finished getting there, the way a head turns before a body follows. */
+const smootherstep = (t) => t * t * t * (t * (t * 6 - 15) + 10)
+const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3)
 
-export default function CameraRig({ viewState, screenFocused = false }) {
+const _o0 = new Vector3()
+const _o1 = new Vector3()
+const _dir = new Vector3()
+
+/** Writes the camera position and aim for flight `f` at eased progress `e`. */
+function flightPose(f, e, outPos, outTarget) {
+  outTarget.lerpVectors(f.fromTarget, f.toTarget, Math.min(1, e * 1.12))
+  _o0.subVectors(f.from, f.fromTarget)
+  _o1.subVectors(f.to, f.toTarget)
+  const l0 = Math.max(1e-4, _o0.length())
+  const l1 = Math.max(1e-4, _o1.length())
+  _dir.copy(_o0).divideScalar(l0).lerp(_o1.divideScalar(l1), e).normalize()
+  const len = Math.exp(Math.log(l0) + (Math.log(l1) - Math.log(l0)) * e)
+  outPos.copy(outTarget).addScaledVector(_dir, len)
+}
+
+/* Where the camera waits behind the BIOS screen, relative to the room shot:
+   further back, higher and off to one side. The reveal is a slow descending
+   glide from here into the composed shot, so the first thing anyone sees of
+   the room is the room arriving — not a cut to a still. */
+const INTRO_OFFSET = [-1.9, 1.5, 4.6]
+const INTRO_TARGET = [0, 0.55, 0]
+
+export default function CameraRig({ viewState, entered = true }) {
   const { camera, size } = useThree()
 
-  /* TWO distances at the desk, not one.
+  /* The seated shot: flush to the glass, derived from viewport aspect because
+     a narrow window is width-limited and has to sit further back to keep the
+     whole 4:3 display in frame.
 
-     Sitting down is not a single position. While the pointer is ON the screen
-     you want to be flush against the glass, because you are reading; the moment
-     it leaves, you want to be leaning back far enough to see the machine you
-     are sitting at and the desk it stands on. The reference site does exactly
-     this and it is most of what makes the scene feel inhabited rather than
-     modal — you are never simply "in the monitor", you are at a desk, and the
-     desk is still there in your peripheral vision.
-
-     Both are derived from viewport aspect, because on a narrow window the 4:3
-     display is width-limited rather than height-limited and the camera has to
-     sit further back to keep all of it on screen. */
+     There is ONE seated distance. There used to be two — flush while the
+     pointer was on the glass, leaning back whenever it left — and with a
+     hover-to-sit on top, every pass of the mouse across the bezel set the
+     camera surging in or out. Sitting down is now a decision: click, arrive,
+     stay put until you choose to stand. */
   const monitorView = useMemo(() => {
     const aspect = size.width / size.height || 16 / 9
-    const flush = monitorViewDistance(camera.fov, aspect)
     return {
-      flush,
-      relaxed: flush * RELAX,
+      flush: monitorViewDistance(camera.fov, aspect),
       target: [0, SEAT_Y, SCREEN.z],
     }
   }, [camera.fov, size.width, size.height])
@@ -175,9 +189,9 @@ export default function CameraRig({ viewState, screenFocused = false }) {
 
   const flight = useRef({
     active: false,
+    kind: 'out',
     startedAt: 0,
-    duration: DURATION_IN,
-    goingIn: false,
+    duration: STAND_MS,
     from: new Vector3(),
     fromTarget: new Vector3(...ROOM_TARGET),
     to: new Vector3(),
@@ -191,30 +205,40 @@ export default function CameraRig({ viewState, screenFocused = false }) {
      course of a visit. */
   const drift = useRef(new Vector3())
 
-  /* 0 = leaning back at the desk, 1 = flush against the glass. Eased rather
-     than switched, and held in a ref so it survives re-renders without
-     restarting the animation. */
-  const focus = useRef(0)
+  /* The reveal. Until START is pressed the camera is parked at the intro pose
+     (behind an opaque loading screen, so nobody sees it); the moment it is
+     pressed it glides into the room shot while the screen fades. */
+  const introStarted = useRef(false)
+  useEffect(() => {
+    if (!entered || introStarted.current) return
+    introStarted.current = true
+    const f = flight.current
+    f.from.set(
+      roomPos.current[0] + INTRO_OFFSET[0],
+      roomPos.current[1] + INTRO_OFFSET[1],
+      roomPos.current[2] + INTRO_OFFSET[2],
+    )
+    f.fromTarget.set(...INTRO_TARGET)
+    f.to.set(...roomPos.current)
+    f.toTarget.set(...ROOM_TARGET)
+    f.kind = 'intro'
+    f.duration = INTRO_MS
+    f.startedAt = performance.now()
+    f.active = true
+  }, [entered])
 
   /* A FLIGHT STARTS ON A VIEW CHANGE, AND ON NOTHING ELSE.
 
-     This effect used to list `monitorView` as a dependency, and that was the
-     bug behind "it zooms out a little on its own". `monitorView` is derived
-     from the viewport, so it changes on every resize — and a resize is not
-     only someone dragging the window corner. A scrollbar appearing, the OS
-     <Html> layer mounting, a phone's URL bar sliding away, or the browser
-     settling its layout a frame after load all resize the canvas. Each one
-     re-ran this effect, which restarted a one-and-a-half second flight from
-     wherever the camera happened to be — so the shot drifted, apparently in
-     response to whatever the pointer had just done, because that is what the
-     viewer had just done.
-
-     Now the only thing that can begin a flight is an actual change of
-     viewState. Resizes are handled below, by SNAPPING, which is correct: the
-     framing has to change because the aspect changed, but the camera should
-     not travel to get there. */
+     `monitorView` is deliberately not a dependency: it is derived from the
+     viewport, so it changes on every resize — a scrollbar appearing, the
+     <Html> layer mounting, a phone URL bar — and each one used to restart the
+     flight from wherever the camera was. Resizes SNAP instead (below). */
+  const lastView = useRef(viewState)
   useEffect(() => {
-    const goingIn = viewState === 'ZOOMING_IN' || viewState === 'MONITOR_ZOOMED'
+    if (lastView.current === viewState) return
+    lastView.current = viewState
+    if (viewState !== 'ZOOMING_IN' && viewState !== 'ZOOMING_OUT') return
+    const goingIn = viewState === 'ZOOMING_IN'
     const f = flight.current
 
     // Start from wherever the camera actually is, so interrupting a flight
@@ -222,36 +246,27 @@ export default function CameraRig({ viewState, screenFocused = false }) {
     f.from.copy(camera.position)
     f.fromTarget.copy(f.target)
 
-    /* The flight always lands on the RELAXED desk position, never flush. The
-       last stretch — relaxed to flush — belongs to the focus easing below, so
-       arriving reads as sitting down and then leaning in, two beats rather than
-       one long push. It also means the flight has one fixed endpoint and cannot
-       fight the pointer for control of the final distance. */
     if (goingIn) {
-      f.to.set(0, SEAT_Y, SCREEN.z + monitorView.relaxed)
+      f.to.set(0, SEAT_Y, SCREEN.z + monitorView.flush)
       f.toTarget.set(...monitorView.target)
     } else {
       f.to.set(...roomPos.current)
       f.toTarget.set(...VIEWS.ROOM.target)
     }
-    f.duration = goingIn ? DURATION_IN : DURATION_OUT
-    f.goingIn = goingIn
+    f.kind = goingIn ? 'in' : 'out'
+    f.duration = goingIn ? SIT_MS : STAND_MS
     f.startedAt = performance.now()
     f.active = true
-    // monitorView is deliberately NOT a dependency — see above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewState, camera])
 
-  /* Re-framing after a resize, without moving. Only while parked AT the
-     monitor: in the room the framing is a fixed position that does not depend
-     on aspect, and mid-flight the running interpolation already owns the
-     camera and must not be overwritten under it. */
+  /* Re-framing after a resize while seated, without moving. Mid-flight the
+     running interpolation owns the camera and must not be overwritten. */
   useEffect(() => {
     if (viewState !== 'MONITOR_ZOOMED') return
     const f = flight.current
     if (f.active) return
-    const dist = monitorView.relaxed + (monitorView.flush - monitorView.relaxed) * focus.current
-    camera.position.set(0, SEAT_Y, SCREEN.z + dist)
+    camera.position.set(0, SEAT_Y, SCREEN.z + monitorView.flush)
     f.target.set(...monitorView.target)
     camera.lookAt(f.target)
   }, [monitorView, viewState, camera])
@@ -259,100 +274,77 @@ export default function CameraRig({ viewState, screenFocused = false }) {
   const step = (state, delta) => {
     const f = flight.current
 
+    /* Behind the BIOS screen: hold the intro pose. */
+    if (!entered && !f.active) {
+      camera.position.set(
+        roomPos.current[0] + INTRO_OFFSET[0],
+        roomPos.current[1] + INTRO_OFFSET[1],
+        roomPos.current[2] + INTRO_OFFSET[2],
+      )
+      f.target.set(...INTRO_TARGET)
+      camera.lookAt(f.target)
+      return
+    }
+
     if (f.active) {
-      const t = Math.min(1, (performance.now() - f.startedAt) / (f.duration * 1000))
-      const eased = f.goingIn ? easeInOutQuintic(t) : easeOutQuintic(t)
+      const t = Math.min(1, (performance.now() - f.startedAt) / f.duration)
+      const eased = f.kind === 'intro' ? smootherstep(easeOutCubic(t) * 0.35 + t * 0.65) : smootherstep(t)
 
-      camera.position.lerpVectors(f.from, f.to, eased)
+      flightPose(f, eased, camera.position, f.target)
 
-      /* Blend the float in over the RETURN flight, so the camera is already
-         drifting by the time it parks. Without this the flight lands exactly
-         on the resting position and the float — which never stopped running —
-         snaps its current offset in on the very next frame. Scaling by the same
-         easing the flight uses means the two are the same motion, and there is
-         no frame where anything jumps. */
-      if (!f.goingIn) {
+      /* Landing in the room: blend the float in with the same easing, so the
+         camera is already drifting when it parks and nothing jumps on the
+         first free frame. */
+      if (f.kind !== 'in') {
         const now = performance.now() / 1000
         camera.position.x += floatAxis(FLOAT.x, now) * eased
         camera.position.y += floatAxis(FLOAT.y, now) * eased
         camera.position.z += floatAxis(FLOAT.z, now) * eased
       }
-
-      f.target.lerpVectors(f.fromTarget, f.toTarget, easeOutQuintic(Math.min(1, t * 1.15)))
       camera.lookAt(f.target)
 
       if (t >= 1) {
         f.active = false
-        // Re-seat the drift where the flight ended so the parallax picks up
-        // from the resting shot instead of jumping on its first frame.
         drift.current.set(0, 0, 0)
       }
       return
     }
 
-    /* -------------------------------------------------- seated at the desk */
-    if (viewState === 'MONITOR_ZOOMED') {
-      const k = 1 - Math.exp(-FOCUS_EASE * delta)
-      focus.current += ((screenFocused ? 1 : 0) - focus.current) * k
-
-      const dist = monitorView.relaxed + (monitorView.flush - monitorView.relaxed) * focus.current
-
-      // Seated 3D desk pointer parallax (matches Henry Heffernan's reference site)
-      const pk = 1 - Math.exp(-PARALLAX_EASE * delta)
-      const targetParallaxX = screenFocused ? 0 : state.pointer.x * 0.28
-      const targetParallaxY = screenFocused ? 0 : state.pointer.y * 0.16
-      drift.current.x += (targetParallaxX - drift.current.x) * pk
-      drift.current.y += (targetParallaxY - drift.current.y) * pk
-
-      const now = performance.now() / 1000
-      const breathe = (1 - focus.current) * 0.32
-
-      camera.position.set(
-        drift.current.x + floatAxis(FLOAT.x, now) * breathe,
-        SEAT_Y + drift.current.y + floatAxis(FLOAT.y, now) * breathe,
-        SCREEN.z + dist,
-      )
-      f.target.set(drift.current.x * 0.4, SEAT_Y + drift.current.y * 0.3, SCREEN.z)
+    /* -------------------------------------------------- seated at the desk
+       Perfectly still. You are reading; a camera that sways while you read
+       is a camera that makes the text swim. */
+    if (viewState === 'MONITOR_ZOOMED' || viewState === 'ZOOMING_IN') {
+      camera.position.set(0, SEAT_Y, SCREEN.z + monitorView.flush)
+      f.target.set(...monitorView.target)
       camera.lookAt(f.target)
       return
     }
 
-    if (viewState === 'ROOM') {
-      /* Frame-rate independent smoothing. `1 - exp(-k * dt)` is the correct
-         form: a plain `lerp(a, b, 0.1)` per frame moves twice as fast at
-         120fps as at 60, so the feel of the drift would change with the
-         display rather than staying the same everywhere. */
-      const k = 1 - Math.exp(-PARALLAX_EASE * delta)
-      drift.current.x += (state.pointer.x * PARALLAX_X - drift.current.x) * k
-      drift.current.y += (state.pointer.y * PARALLAX_Y - drift.current.y) * k
-      // Pointer UP eases the camera IN, which is why this is negated.
-      drift.current.z += (-state.pointer.y * PARALLAX_Z - drift.current.z) * k
+    /* ------------------------------------------------------------- room
+       Frame-rate independent smoothing: `1 - exp(-k * dt)` feels the same at
+       60Hz and 120Hz, where a plain per-frame lerp would not. */
+    const k = 1 - Math.exp(-PARALLAX_EASE * delta)
+    drift.current.x += (state.pointer.x * PARALLAX_X - drift.current.x) * k
+    drift.current.y += (state.pointer.y * PARALLAX_Y - drift.current.y) * k
+    // Pointer UP eases the camera IN, which is why this is negated.
+    drift.current.z += (-state.pointer.y * PARALLAX_Z - drift.current.z) * k
 
-      /* Wall-clock, like everything else here. `state.clock` is an accumulated
-         elapsed time that stalls with the render loop, so a tab that is
-         restored after being backgrounded would resume the float from where it
-         paused and visibly jump. Real elapsed time just carries on. */
-      const t = performance.now() / 1000
+    // Wall-clock, so a tab restored from the background does not jump.
+    const t = performance.now() / 1000
 
-      camera.position.set(
-        roomPos.current[0] + drift.current.x + floatAxis(FLOAT.x, t),
-        roomPos.current[1] + drift.current.y + floatAxis(FLOAT.y, t),
-        roomPos.current[2] + drift.current.z + floatAxis(FLOAT.z, t),
-      )
+    camera.position.set(
+      roomPos.current[0] + drift.current.x + floatAxis(FLOAT.x, t),
+      roomPos.current[1] + drift.current.y + floatAxis(FLOAT.y, t),
+      roomPos.current[2] + drift.current.z + floatAxis(FLOAT.z, t),
+    )
 
-      /* The target follows at a FRACTION of the camera's travel rather than
-         staying pinned. Pinned, every camera move is a pure orbit and the desk
-         appears to swing; moving the target with it keeps the subject roughly
-         where it is in frame while the viewpoint shifts around it, which is
-         what a real handheld camera does and what makes the motion read as
-         drift rather than as a turntable. */
-      f.target.set(
-        ROOM_TARGET[0] + drift.current.x * 0.35 + floatAxis(FLOAT.x, t) * 0.4,
-        ROOM_TARGET[1] + drift.current.y * 0.3 + floatAxis(FLOAT.y, t) * 0.4,
-        ROOM_TARGET[2],
-      )
-    }
-
+    /* The target follows at a fraction of the camera's travel, so moves read
+       as a handheld drift rather than a turntable orbit. */
+    f.target.set(
+      ROOM_TARGET[0] + drift.current.x * 0.35 + floatAxis(FLOAT.x, t) * 0.4,
+      ROOM_TARGET[1] + drift.current.y * 0.3 + floatAxis(FLOAT.y, t) * 0.4,
+      ROOM_TARGET[2],
+    )
     camera.lookAt(f.target)
   }
 
