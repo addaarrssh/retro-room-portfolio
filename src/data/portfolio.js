@@ -55,7 +55,7 @@ export const education = {
 
 export const stats = [
   { label: 'PUBLIC REPOS', value: '23+' },
-  { label: 'INTERN', value: 'NxtWave & OA Helper' },
+  { label: 'INTERN', value: 'NxtWave' },
   { label: 'GRADUATES', value: '2028' },
   { label: 'BASED IN', value: 'JH, IN' },
 ]
@@ -146,12 +146,6 @@ export const timeline = [
     title: 'Data Analytics & Growth Intern — NxtWave',
     org: 'NxtWave (Remote — nxtwave.tech)',
     body: 'Spearheaded analytics and user acquisition modeling across 50+ campus engineering clusters, tracking onboarding funnels and retention dynamics to guide product growth.',
-  },
-  {
-    year: 'Jul 2026 – Present',
-    title: 'Operations & Growth Intern — OA Helper',
-    org: 'OA Helper (Remote — Ranchi, Jharkhand)',
-    body: 'Spearheaded nationwide campus distribution channel logistics across 50+ engineering colleges, optimizing outreach schedules, fulfillment tracking, and student ambassador networks. Analyzed funnel data in SQL/Excel to streamline conversion workflows.',
   },
   {
     year: 'Jun 2024 – Present',
