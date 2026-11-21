@@ -144,7 +144,7 @@ export const timeline = [
   {
     year: 'Jul 2026 – Present',
     title: 'Data Analytics & Growth Intern — NxtWave',
-    org: 'NxtWave (Remote — nxtwave.tech)',
+    org: 'NxtWave (Remote)',
     body: 'Spearheaded analytics and user acquisition modeling across 50+ campus engineering clusters, tracking onboarding funnels and retention dynamics to guide product growth.',
   },
   {
