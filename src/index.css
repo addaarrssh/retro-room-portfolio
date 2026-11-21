@@ -29,6 +29,18 @@
   color-scheme: dark;
 }
 
+/* iOS: stop Safari re-inflating text when the phone is turned sideways, and
+   stop a double tap zooming the page (a second tap in the room should just be
+   a tap). Pinch is left alone for accessibility. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 html,
 body,
 #root {

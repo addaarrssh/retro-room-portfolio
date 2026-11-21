@@ -199,7 +199,10 @@ export default function SceneCanvas({
         powerPreference: 'high-performance',
         alpha: false,
         stencil: false,
-        preserveDrawingBuffer: true,
+        /* Only photo mode (the P key) reads the canvas back, and a phone has
+           no P key. Keeping the buffer makes a mobile GPU copy the whole
+           frame every frame instead of swapping it, so phones do without. */
+        preserveDrawingBuffer: !COMPACT,
       }}
       camera={{
         position: VIEWS.ROOM.position,

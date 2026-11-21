@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Html, RoundedBox } from '@react-three/drei'
+import { Html, RoundedBox, useTexture } from '@react-three/drei'
+import { SRGBColorSpace } from 'three'
+import { COMPACT } from '../../hooks/useDevice'
 import { useFrame } from '@react-three/fiber'
 import { AdditiveBlending, DoubleSide, MathUtils } from 'three'
 import { PANEL, SCREEN, SCREEN_HTML_FACTOR, SCREEN_PX } from './layout'
@@ -570,36 +572,54 @@ export default function CRTMonitor({
       {/* ---------------------------------------------------------- HTML Desktop OS (Permanently Mounted Virtual Display) */}
       {/* Kept permanently mounted at SCREEN.z so that everything done on the monitor
           (open windows, active tabs, inputs, scroll states) stays persistent when flying out to room view. */}
-      <Html
-        transform
-        position={[0, SCREEN.y, SCREEN.z]}
-        distanceFactor={SCREEN_HTML_FACTOR}
-        zIndexRange={[100, 0]}
-        occlude={false}
-        pointerEvents={isZoomed ? 'auto' : 'none'}
-        style={{
-          width: `${SCREEN_PX.w}px`,
-          height: `${SCREEN_PX.h}px`,
-          overflow: 'hidden',
-          borderRadius: '6px',
-          opacity: 1,
-          pointerEvents: isZoomed ? 'auto' : 'none',
-        }}
-      >
-        <DesktopOS
-          powered
-          windowManager={windowManager}
-          muted={muted}
-          onToggleMute={onToggleMute}
-          appearance={appearance}
-          onToggleAppearance={onToggleAppearance}
-          era={era}
-          pendingApp={pendingApp}
-          onPendingHandled={onPendingHandled}
-          onScreenFocus={onScreenFocus}
-          scanlines={isZoomed}
-        />
-      </Html>
+{/* ON A PHONE THE SCREEN IS A TEXTURE, NOT A DOM LAYER.
+
+          <Html transform> does not draw the desktop into the scene: it floats
+          a web layer over the canvas and moves it every frame with CSS so it
+          appears to sit on the glass. That holds up in Chrome, and it is how
+          the desktop stays a real, clickable page. On an iPhone the layer came
+          loose: the desktop hung a third of its height below the monitor,
+          over the keyboard, with the dead glass showing behind it.
+
+          A phone never uses that layer anyway. Sitting down opens MobileOS
+          full-screen, so the only job the monitor has there is to look like a
+          monitor that is switched on. A picture of the desktop mapped onto a
+          plane does that, is part of the scene so it cannot drift, and costs
+          nothing per frame. */}
+      {COMPACT ? (
+        <PhoneScreen />
+      ) : (
+        <Html
+          transform
+          position={[0, SCREEN.y, SCREEN.z]}
+          distanceFactor={SCREEN_HTML_FACTOR}
+          zIndexRange={[100, 0]}
+          occlude={false}
+          pointerEvents={isZoomed ? 'auto' : 'none'}
+          style={{
+            width: `${SCREEN_PX.w}px`,
+            height: `${SCREEN_PX.h}px`,
+            overflow: 'hidden',
+            borderRadius: '6px',
+            opacity: 1,
+            pointerEvents: isZoomed ? 'auto' : 'none',
+          }}
+        >
+          <DesktopOS
+            powered
+            windowManager={windowManager}
+            muted={muted}
+            onToggleMute={onToggleMute}
+            appearance={appearance}
+            onToggleAppearance={onToggleAppearance}
+            era={era}
+            pendingApp={pendingApp}
+            onPendingHandled={onPendingHandled}
+            onScreenFocus={onScreenFocus}
+            scanlines={isZoomed}
+          />
+        </Html>
+      )}
 
       {/* Bloom Ambient Screen Glow.
 
@@ -637,5 +657,21 @@ export default function CRTMonitor({
         decay={2}
       />
     </group>
+  )
+}
+
+
+/** The desktop as a still image on the glass. Phones only; see above. */
+function PhoneScreen() {
+  const map = useTexture('/monitor-screen.jpg')
+  map.colorSpace = SRGBColorSpace
+  map.anisotropy = 8
+  return (
+    <mesh position={[0, SCREEN.y, SCREEN.z + 0.0015]}>
+      <planeGeometry args={[SCREEN.w, SCREEN.h]} />
+      {/* Unlit and not tone-mapped: a screen emits its picture, it does not
+          reflect the room's light, and ACES would grey the white page. */}
+      <meshBasicMaterial map={map} toneMapped={false} />
+    </mesh>
   )
 }
