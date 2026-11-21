@@ -125,6 +125,7 @@ const APPS = [
     height: 680,
     component: PortfolioV3App,
     web: true,
+    externalUrl: 'https://v3.addaarrssh.me',
   },
 ]
 
@@ -212,6 +213,10 @@ export default function DesktopOS({
 
   const openApp = (app) => {
     setStartOpen(false)
+    if (app.externalUrl) {
+      window.open(app.externalUrl, '_blank', 'noopener,noreferrer')
+      return
+    }
     open(app)
   }
 
@@ -441,20 +446,8 @@ export default function DesktopOS({
               if (!app) return null
               const selected = selectedIcon === id
 
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  data-click-sound
-                  data-app-id={id}
-                  title={`Open ${app.label}`}
-                  onPointerDown={() => setSelectedIcon(id)}
-                  onFocus={() => setSelectedIcon(id)}
-                  onClick={() => openApp(app)}
-                  className="w95-icon flex w-[80px] flex-col items-center gap-1 px-1 pb-2 pt-1.5"
-                >
-                  {/* Selection in this era was a BLUE WASH over the icon plus an
-                      inverted label, not a rounded highlight plate behind it. */}
+              const iconBody = (
+                <>
                   <span
                     className="w95-icon-art"
                     style={{
@@ -480,6 +473,43 @@ export default function DesktopOS({
                   >
                     {app.label}
                   </span>
+                </>
+              )
+
+              if (app.externalUrl) {
+                return (
+                  <a
+                    key={id}
+                    href={app.externalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-click-sound
+                    data-app-id={id}
+                    title={`Open ${app.label} (${app.externalUrl})`}
+                    onPointerDown={() => setSelectedIcon(id)}
+                    onFocus={() => setSelectedIcon(id)}
+                    onClick={() => setSelectedIcon(id)}
+                    className="w95-icon flex w-[80px] flex-col items-center gap-1 px-1 pb-2 pt-1.5"
+                    style={{ textDecoration: 'none' }}
+                  >
+                    {iconBody}
+                  </a>
+                )
+              }
+
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  data-click-sound
+                  data-app-id={id}
+                  title={`Open ${app.label}`}
+                  onPointerDown={() => setSelectedIcon(id)}
+                  onFocus={() => setSelectedIcon(id)}
+                  onClick={() => openApp(app)}
+                  className="w95-icon flex w-[80px] flex-col items-center gap-1 px-1 pb-2 pt-1.5"
+                >
+                  {iconBody}
                 </button>
               )
             })}
@@ -558,17 +588,34 @@ export default function DesktopOS({
                     {i === DESKTOP_GROUP_BREAK && (
                       <div className="mx-0.5 my-[3px] h-[2px]" style={{ boxShadow: 'inset 0 1px 0 #808080, inset 0 -1px 0 #ffffff' }} />
                     )}
-                    <button
-                      type="button"
-                      role="menuitem"
-                      tabIndex={-1}
-                      data-click-sound
-                      onClick={() => openApp(app)}
-                      className="w95-menu-item flex h-[34px] w-full items-center gap-2.5 pl-1.5 pr-2 text-left text-[12px]"
-                    >
-                      <Win95Icon appId={app.id} size={24} />
-                      <span className="truncate">{app.label}</span>
-                    </button>
+                    {app.externalUrl ? (
+                      <a
+                        href={app.externalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        role="menuitem"
+                        tabIndex={-1}
+                        data-click-sound
+                        onClick={() => setStartOpen(false)}
+                        className="w95-menu-item flex h-[34px] w-full items-center gap-2.5 pl-1.5 pr-2 text-left text-[12px]"
+                        style={{ textDecoration: 'none', color: 'inherit' }}
+                      >
+                        <Win95Icon appId={app.id} size={24} />
+                        <span className="truncate">{app.label} ↗</span>
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        tabIndex={-1}
+                        data-click-sound
+                        onClick={() => openApp(app)}
+                        className="w95-menu-item flex h-[34px] w-full items-center gap-2.5 pl-1.5 pr-2 text-left text-[12px]"
+                      >
+                        <Win95Icon appId={app.id} size={24} />
+                        <span className="truncate">{app.label}</span>
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>

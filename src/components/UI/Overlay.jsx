@@ -141,6 +141,7 @@ export default function Overlay({
               </SlabLink>
               {profile.linkedin && <SlabLink href={profile.linkedin}>LinkedIn</SlabLink>}
               {profile.github && <SlabLink href={profile.github}>GitHub</SlabLink>}
+              <SlabLink href="https://v3.addaarrssh.me">Portfolio V3 ↗</SlabLink>
               {profile.email && <SlabLink href={`mailto:${profile.email}`}>Email</SlabLink>}
             </div>
           </>
