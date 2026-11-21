@@ -7,7 +7,7 @@ import { useState } from 'react'
    transformed to fit the window, so all UI components render correctly.
    ========================================================================== */
 
-const SITE_URL = 'https://portfolio-copy-3.vercel.app'
+const SITE_URL = 'https://v3.addaarrssh.me'
 
 /* The iframe renders at this "virtual" resolution, then gets scaled to fit
    the actual window. This prevents the site's responsive breakpoints from
