@@ -3,7 +3,8 @@ import Overlay from './components/UI/Overlay'
 import LoadingScreen from './components/UI/LoadingScreen'
 import FlatSite from './components/UI/FlatSite'
 import PhotoMode from './components/UI/PhotoMode'
-import { useDevice } from './hooks/useDevice'
+import { COMPACT, useDevice } from './hooks/useDevice'
+import MobileOS from './components/OS/MobileOS'
 import { useWindowManager } from './hooks/useWindowManager'
 import audio from './audio/AudioEngine'
 import { SIT_MS, STAND_MS } from './components/3D/timing'
@@ -34,8 +35,8 @@ const SceneCanvas = lazy(() => import('./components/3D/SceneCanvas'))
    ========================================================================== */
 
 export default function App() {
-  /* Phones, anything without WebGL, and anyone who asked for reduced motion
-     get the readable site instead of a 3D scene they cannot drive. Checked
+  /* Anything without WebGL, and anyone who asked for reduced motion, gets the
+     readable site instead of a 3D scene. Phones get the room. Checked
      before any of the room state exists, so none of it is even constructed. */
   const device = useDevice()
 
@@ -315,7 +316,8 @@ export default function App() {
       if (e.target.closest?.('button, a, input, textarea')) return
 
       const travelled = Math.hypot(e.clientX - down.x, e.clientY - down.y)
-      if (travelled > 6) return
+      // A finger is less steady than a mouse, so a tap is allowed more travel.
+      if (travelled > (e.pointerType === 'touch' ? 12 : 6)) return
 
       if (viewState === 'ROOM') {
         zoomToMonitor()
@@ -339,6 +341,13 @@ export default function App() {
       return next
     })
   }, [])
+
+  /* On a phone, sitting down opens the screen full-size (MobileOS) instead of
+     leaving you to read it through a 370px monitor. While it is open the 3D
+     scene is entirely covered, so it stops rendering: nothing is being drawn
+     behind a page somebody is trying to scroll. */
+  const mobileScreen = COMPACT && viewState === 'MONITOR_ZOOMED'
+  const clearPending = useCallback(() => setPendingApp(null), [])
 
   if (device.flat) return <FlatSite reason={device.reason} />
 
@@ -364,8 +373,9 @@ export default function App() {
         onHoverMonitor={setMonitorHover}
         onOpenApp={openFromRoom}
         onHoverProp={setHoveredProp}
-        pendingApp={pendingApp}
-        onPendingHandled={() => setPendingApp(null)}
+        pendingApp={COMPACT ? null : pendingApp}
+        onPendingHandled={clearPending}
+        paused={mobileScreen}
         entered={entered}
         onReady={() => setReady(true)}
         windowManager={windowManager}
@@ -373,6 +383,10 @@ export default function App() {
         onToggleMute={toggleMute}
       />
       </Suspense>
+
+      {mobileScreen && (
+        <MobileOS pendingApp={pendingApp} onPendingHandled={clearPending} onClose={zoomToRoom} />
+      )}
 
       {!photoMode && (
         <Overlay

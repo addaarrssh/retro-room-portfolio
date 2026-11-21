@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { profile } from '../../data/portfolio'
+import { COMPACT, TOUCH } from '../../hooks/useDevice'
 
 /* ==========================================================================
    LoadingScreen — the BIOS power-on self-test.
@@ -19,12 +20,16 @@ import { profile } from '../../data/portfolio'
    3. The resource lines carry REAL percentages counting to 100. That is the
       detail that makes it feel like it is actually doing something, and it
       costs nothing because the scene genuinely is loading behind this.
-   4. It ENDS ON A DIALOG WITH A BUTTON and waits. It does not auto-advance.
+   4. IT HANDS OVER BY ITSELF. The last line prints, holds for a beat, and
+      the screen dissolves into the room.
 
-   That last point is not styling. Browsers refuse to start an AudioContext
-   without a real user gesture, so the START click is the only thing that
-   makes sound possible for the rest of the visit. A screen that dismissed
-   itself would ship a silent site.
+   It used to end on a dialog with a START button and wait. That was there
+   because browsers refuse to start an AudioContext without a user gesture,
+   and the click was the gesture. The site is silent on load now, so the
+   button was a toll with nothing behind it: a visitor had to read a screen
+   and press something before seeing a single thing about the person whose
+   portfolio this is. Sound, if it is ever switched on, unlocks on the first
+   tap in the room instead. A tap or a key still skips the hold.
    ========================================================================== */
 
 /* Deliberately absurd faux-firmware, in the house style of every real BIOS:
@@ -61,6 +66,9 @@ const RESOURCES = [
 const FADE_MS = 900
 const HEAD_MS = 160
 const RES_STEP = 22
+/* How long the finished readout stays up before the room takes over. Long
+   enough to read the last line, short enough not to feel like a wait. */
+const HOLD_MS = 650
 
 export default function LoadingScreen({ ready, onEnter, onGone }) {
   const [tick, setTick] = useState(0)
@@ -79,7 +87,9 @@ export default function LoadingScreen({ ready, onEnter, onGone }) {
     return () => clearInterval(id)
   }, [])
 
-  const headShown = BIOS_HEAD.filter((l) => tick >= l.delay)
+  /* A phone gets the readout without its blank spacer lines, so the whole
+     boot fits on the screen above the fold. */
+  const headShown = BIOS_HEAD.filter((l) => tick >= l.delay && (!COMPACT || l.text))
 
   /* Resource lines resolve in order, each one printing the running total. The
      last line cannot print until the scene actually reports ready, so the
@@ -102,39 +112,43 @@ export default function LoadingScreen({ ready, onEnter, onGone }) {
     return `${p(d.getMonth() + 1)}/${p(d.getDate())}/${d.getFullYear()}`
   }, [])
 
-  /* START hands over at once: the room's intro glide begins on the same click,
-     and this screen dissolves over it, so what the visitor sees is the room
-     arriving out of the dark rather than a black screen cutting to a still.
-     The unmount is on a timer, not transitionend — an event that never fires
-     in a background tab would leave an invisible layer eating every click. */
+  /* The hand-over. The room's intro glide begins at the same moment this
+     screen starts to dissolve, so what the visitor sees is the room arriving
+     out of the dark rather than a black screen cutting to a still. The unmount
+     is on a timer, not transitionend — an event that never fires in a
+     background tab would leave an invisible layer eating every tap. */
   const handleStart = () => {
     if (dismissing) return
     setDismissing(true)
     onEnter()
     timers.current.push(setTimeout(() => onGone?.(), FADE_MS + 60))
   }
+  const enter = useRef(handleStart)
+  enter.current = handleStart
 
-  /* ENTER is the keyboard equivalent of clicking START, and it counts as the
-     same user gesture as far as the audio unlock is concerned. */
+  /* Once the scene is ready and the readout has finished: hold, then go. A
+     key press skips the hold; so does a tap anywhere (onClick below). */
   useEffect(() => {
     if (!complete) return undefined
+    const id = setTimeout(() => enter.current(), HOLD_MS)
     const onKey = (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') {
         e.preventDefault()
-        handleStart()
+        enter.current()
       }
     }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-    // handleStart only closes over onEnter, stable for this screen's lifetime.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      clearTimeout(id)
+      window.removeEventListener('keydown', onKey)
+    }
   }, [complete])
 
   return (
     <div
       onClick={complete ? handleStart : undefined}
       style={{ transitionDuration: `${FADE_MS}ms`, transitionTimingFunction: 'cubic-bezier(.4,0,.2,1)' }}
-      className={`absolute inset-0 z-[100] cursor-pointer overflow-hidden bg-black transition-opacity ${
+      className={`absolute inset-0 z-[100] overflow-hidden bg-black transition-opacity ${
         dismissing ? 'pointer-events-none opacity-0' : 'opacity-100'
       }`}
     >
@@ -162,7 +176,8 @@ export default function LoadingScreen({ ready, onEnter, onGone }) {
           <>
             <div>&nbsp;</div>
             <div>
-              All Content Loaded, launching &apos;{profile.name} Portfolio Showcase&apos; V1.0
+              All Content Loaded, launching &apos;{profile.name} Portfolio Showcase&apos; V1.0{' '}
+              <span className="caret">_</span>
             </div>
           </>
         )}
@@ -173,37 +188,10 @@ export default function LoadingScreen({ ready, onEnter, onGone }) {
       {/* Firmware footer. Present from the first frame, because a real BIOS
           prints its key hints immediately and leaves them up. */}
       <div className="absolute inset-x-0 bottom-0 p-5 font-mono text-[13px] text-white sm:p-7">
-        <div>Press DEL to enter SETUP , ESC to skip memory test</div>
+        {/* Key hints are for machines with keys. */}
+        {!TOUCH && <div>Press DEL to enter SETUP , ESC to skip memory test</div>}
         <div>{today}</div>
       </div>
-
-      {/* The launcher. A double-ruled box in the dead centre — the one piece
-          of the screen that is centred, which is what makes it read as a
-          dialog interrupting the readout rather than as more of the readout. */}
-      {complete && (
-        <div className="absolute inset-0 grid place-items-center">
-          <div className="animate-fade-in w-[min(90vw,520px)] border-[3px] border-white bg-black p-1">
-            <div className="border border-white/0 px-6 py-6">
-              <div className="font-mono text-[15px] leading-relaxed text-white">
-                {profile.name} Portfolio Showcase {new Date().getFullYear()}
-                <br />
-                Click start to begin <span className="caret">_</span>
-              </div>
-
-              <div className="mt-5 flex justify-center">
-                <button
-                  type="button"
-                  autoFocus
-                  onClick={handleStart}
-                  className="border-2 border-white bg-black px-4 py-1.5 font-mono text-[15px] tracking-wide text-white transition-colors hover:bg-white hover:text-black focus:bg-white focus:text-black focus:outline-none"
-                >
-                  START
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

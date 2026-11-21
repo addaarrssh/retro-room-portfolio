@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { SCREEN_W, SCREEN_H, TASKBAR_H } from '../../hooks/useWindowManager'
+import { SCREEN_W, SCREEN_H, TASKBAR_H, UI_SCALE } from '../../hooks/useWindowManager'
 import { OSThemeContext, OS_WIN95 } from './theme'
 import Win95Icon from './Win95Icons'
 import WindowContainer from './WindowContainer'
@@ -402,6 +402,9 @@ export default function DesktopOS({
         style={{
           width: `${SCREEN_W}px`,
           height: `${SCREEN_H}px`,
+          /* Phones lay the desktop out at half resolution and scale it back
+             up to fill the glass, so type and hit targets are twice the size. */
+          ...(UI_SCALE !== 1 ? { transform: `scale(${UI_SCALE})`, transformOrigin: '0 0' } : null),
           background: '#008080',
           fontFamily: "'Tahoma', 'Verdana', 'Geneva', sans-serif",
           fontSize: '12px',

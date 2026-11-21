@@ -6,6 +6,7 @@ import {
   BrightnessContrast,
   EffectComposer,
   N8AO,
+  SMAA,
   ToneMapping,
   Vignette,
 } from '@react-three/postprocessing'
@@ -15,6 +16,7 @@ import CameraRig, { VIEWS } from './CameraRig'
 import RoomScene from './RoomScene'
 import CRTMonitor from './CRTMonitor'
 import WorldCursor from './WorldCursor'
+import { COMPACT } from '../../hooks/useDevice'
 
 /* ==========================================================================
    SceneCanvas — renderer setup, lighting rig and post.
@@ -93,6 +95,16 @@ const LIGHTING = {
   },
 }
 
+/* Dev only: ?tier=high or ?tier=low pins the render tier, so each one can be
+   benchmarked without the performance monitor moving it mid-measurement. */
+const PIN_TIER = import.meta.env.DEV ? new URLSearchParams(window.location.search).get('tier') : null
+const DEV_Q = import.meta.env.DEV ? new URLSearchParams(window.location.search) : new URLSearchParams()
+const FX_OFF = (DEV_Q.get('off') || '').split(',')
+const DEV_MSAA = DEV_Q.get('msaa')
+/* Dev only: ?ao=1 brings ambient occlusion back, for comparing the look. */
+const AO_ON = DEV_Q.get('ao') === '1'
+const DEV_DPR = DEV_Q.get('dpr')
+
 export default function SceneCanvas({
   viewState,
   appearance = 'LIGHT',
@@ -115,6 +127,7 @@ export default function SceneCanvas({
   muted,
   onToggleMute,
   onToggleAppearance,
+  paused = false,
 }) {
   const L = LIGHTING[appearance] ?? LIGHTING.LIGHT
   const isLight = appearance === 'LIGHT'
@@ -132,7 +145,36 @@ export default function SceneCanvas({
      drops to dpr 1 and removes the composer entirely. It never climbs back —
      a scene that flips quality up and down as load changes is more distracting
      than one that settles a notch lower and stays there. */
-  const [low, setLow] = useState(false)
+  /* Phones start on the low tier. A mobile GPU running the post stack is how
+     this scene used to arrive as a black screen, and the room without it is
+     the same room. Their pixel ratio is capped at 1.5: enough that edges are
+     clean on a 3x panel, and about half the pixels of dpr 2. */
+  const [low, setLow] = useState(PIN_TIER ? PIN_TIER === 'low' : COMPACT)
+  /* A phone that still cannot hold the frame rate gives up resolution next:
+     fill rate is the whole cost once the post stack is gone. */
+  const [phoneDpr, setPhoneDpr] = useState(1.5)
+
+  /* SEATED AND STILL. Once the camera has landed at the desk nothing in the
+     3D scene moves: the shot is locked and the only thing changing is the DOM
+     desktop on the glass. Rendering the whole room sixty times a second behind
+     it is the single largest cost on the page, and it is spent exactly while
+     the visitor is scrolling and reading, which is when a dropped frame is
+     most visible. So a moment after landing the loop drops to on-demand: a
+     frame is drawn only when something asks for one (a prop change, a resize).
+     The delay lets the monitor's glow and the post settle before it stops. */
+  const [still, setStill] = useState(false)
+  useEffect(() => {
+    if (!zoomed) {
+      setStill(false)
+      return undefined
+    }
+    const id = window.setTimeout(() => setStill(true), 1200)
+    return () => window.clearTimeout(id)
+  }, [zoomed])
+  const decline = () => {
+    setLow(true)
+    if (COMPACT) setPhoneDpr(1.25)
+  }
 
   return (
     <Canvas
@@ -142,7 +184,10 @@ export default function SceneCanvas({
          in every per-pixel cost, and with bloom and a vignette over the top
          the difference is not visible. AdaptiveDpr drops it further if the
          machine still struggles. */
-      dpr={low ? 1 : [1, 1.5]}
+      dpr={DEV_DPR ? Number(DEV_DPR) : COMPACT ? [1, phoneDpr] : low ? 1 : [1, 1.5]}
+      /* Stops the render loop outright while the phone's full-screen page
+         covers the canvas. */
+      frameloop={paused ? 'never' : still ? 'demand' : 'always'}
       shadows={{ type: PCFShadowMap }}
       gl={{
         /* On, for the low tier. While the composer is mounted the scene is
@@ -318,11 +363,18 @@ export default function SceneCanvas({
           drop the post stack without the room changing colour. */}
       {!low && (
         <Suspense fallback={null}>
-          {/* 4x MSAA. It was 0, with antialias also off on the renderer, so
-              nothing in the scene was antialiased at all: the monitor's edges,
-              the desk and the chair arms all crawled as the camera drifted.
-              Affordable now that the shadow pass no longer runs every frame. */}
-          <EffectComposer multisampling={4} enableNormalPass={false}>
+          {/* WHERE THE FRAME WENT. Measured with the tier pinned, on a fast
+              laptop GPU at 1440x900: the full stack cost about 20ms a frame,
+              which is already over the 16.6ms a 60Hz display allows, and on
+              integrated graphics it is several times that. Of the 20ms,
+              ambient occlusion was about 8 and 4x multisampling about 8 more.
+
+              So both are gone from the default stack. Antialiasing is done by
+              SMAA instead, a single post pass that costs about a millisecond,
+              and the contact darkening AO provided is carried by the shadow
+              map, which every object already casts into. The stack now costs
+              roughly a third of what it did. */}
+          <EffectComposer multisampling={DEV_MSAA ? Number(DEV_MSAA) : 0} enableNormalPass={false}>
             {/* Ambient occlusion: the contact darkening where a mug meets a
                 coaster, a keycap meets the board, a drawer meets its frame.
                 The shadow map cannot supply it — one directional light only
@@ -331,7 +383,7 @@ export default function SceneCanvas({
                 Half resolution with depth-aware upsampling is indistinguishable
                 at this scale and a quarter of the cost; the low tier drops the
                 whole composer, AO included. */}
-            <N8AO
+            {AO_ON && <N8AO
               aoRadius={0.22}
               distanceFalloff={0.6}
               intensity={zoomed ? 1.2 : 2.4}
@@ -339,30 +391,44 @@ export default function SceneCanvas({
               halfRes
               depthAwareUpsampling
               color="#1a140f"
-            />
-            <Bloom
+            />}
+            {!FX_OFF.includes('bloom') && <Bloom
               intensity={zoomed ? Math.min(0.28, L.bloom) : L.bloom}
               luminanceThreshold={zoomed ? 0.9 : L.bloomThreshold}
               luminanceSmoothing={0.3}
               kernelSize={KernelSize.SMALL}
               mipmapBlur
-            />
+            />}
             <BrightnessContrast brightness={0.0} contrast={zoomed ? 0.02 : L.contrast} />
             <Vignette eskil={false} offset={0.32} darkness={zoomed ? 0.3 : L.vignette} />
             <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+            <SMAA />
           </EffectComposer>
         </Suspense>
       )}
 
       <StaticShadows token={`${appearance}|${era}|${lampOn}|${low}`} />
-      <PerformanceMonitor
-        ms={300}
-        iterations={6}
-        bounds={() => [38, 55]}
-        flipflops={1}
-        onDecline={() => setLow(true)}
-        onFallback={() => setLow(true)}
-      />
+      {/* Unmounted whenever the loop is not free-running. The monitor counts
+          frames per interval, so a loop that has been stopped on purpose looks
+          to it exactly like a machine that cannot draw, and it would demote
+          the visitor to the low tier for sitting still. Remounting it when the
+          loop resumes also starts its averages from scratch. */}
+      {!still && !paused && !PIN_TIER && (
+        <PerformanceMonitor
+          ms={300}
+          iterations={6}
+          /* `refreshrate` is the fastest the display has been seen to go. A
+             screen that is CAPPED at 30 (a phone in low power mode, an
+             external monitor on a slow link) is not a machine that is
+             struggling, and demoting it would cost sharpness and buy no
+             frames at all. So a capped display is only demoted if it cannot
+             even hold its cap. */
+          bounds={(refreshrate) => (refreshrate < 40 ? [24, 29] : [38, 55])}
+          flipflops={1}
+          onDecline={decline}
+          onFallback={decline}
+        />
+      )}
       <ReadySignal onReady={onReady} />
     </Canvas>
   )
@@ -429,6 +495,7 @@ function ToneExposure({ value }) {
 function ReadySignal({ onReady }) {
   const gl = useThree((s) => s.gl)
   const scene = useThree((s) => s.scene)
+  const advance = useThree((s) => s.advance)
   const latest = useRef(onReady)
   latest.current = onReady
 
@@ -437,6 +504,19 @@ function ReadySignal({ onReady }) {
      the frame rate drops. Call __perf() from the console. */
   useEffect(() => {
     if (!gl || !import.meta.env.DEV) return
+    /* Real cost of one whole frame (scene, shadows, post), in ms. rAF cannot
+       tell you this: it reports the display's refresh interval. This draws
+       frames back to back and waits for the GPU to finish each one. */
+    window.__bench = (n = 40) => {
+      const ctx = gl.getContext()
+      const px = new Uint8Array(4)
+      const t0 = performance.now()
+      for (let i = 0; i < n; i++) {
+        advance(performance.now(), true)
+        ctx.readPixels(0, 0, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, px)
+      }
+      return +((performance.now() - t0) / n).toFixed(2)
+    }
     window.__perf = () => {
       let meshes = 0
       let shadowCasters = 0
@@ -454,6 +534,10 @@ function ReadySignal({ onReady }) {
       })
       return {
         framesRendered: gl.info.render.frame,
+        calls: gl.info.render.calls,
+        triangles: gl.info.render.triangles,
+        programs: gl.info.programs?.length,
+        dpr: gl.getPixelRatio(),
         geometries: gl.info.memory.geometries,
         textures: gl.info.memory.textures,
         meshes,
@@ -462,7 +546,7 @@ function ReadySignal({ onReady }) {
         shadowLights,
       }
     }
-  }, [gl, scene])
+  }, [gl, scene, advance])
 
   useEffect(() => {
     if (!gl) return undefined

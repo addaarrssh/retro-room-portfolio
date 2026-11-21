@@ -3,29 +3,34 @@ import { useEffect, useRef, useState } from 'react'
 /* ==========================================================================
    useDevice — decides whether this visitor gets the 3D room or the flat site.
 
-   The 3D build assumes things a phone does not have: hover states on the
-   interactive props, a drag to orbit, WASD for the car, ⌘K for Spotlight, and
-   a 1024px desktop surface that has to stay legible. Shipping it to a phone
-   produced a black screen, which is worse than not shipping it at all.
+   Phones get the room now. The flat site is only for the two cases where the
+   room genuinely cannot be shown: no WebGL, or a visitor who asked for reduced
+   motion. Everything a phone lacks (hover, a wide viewport, a keyboard) is
+   handled inside the room instead: the camera widens for a portrait frame, a
+   touch drag looks around, and the desktop renders at double size.
 
-   The decision is deliberately STICKY.
-
-   An earlier version re-evaluated on every resize event. That meant dragging a
-   window narrower tore down the entire WebGL scene, and dragging it back
-   rebuilt it from scratch — hundreds of meshes, a reflection probe and a
-   shader recompile, several times a second, mid-drag. Worse, a browser that
-   reports its viewport late (or a preview pane that opens small and then
-   resizes) could flip the tree twice during startup and leave the canvas in a
-   half-mounted state with no error to show for it.
-
-   So: decide once, then only ever switch when the viewport crosses the
-   threshold by a real margin, and only after it has settled.
+   COMPACT is decided ONCE, at load. It changes the desktop's virtual
+   resolution and the render tier, and re-deciding it on a resize would mean
+   rebuilding the window list and the WebGL scene mid-drag.
    ========================================================================== */
 
-const MOBILE_MAX_WIDTH = 900
-/** Dead zone around the threshold so a few pixels of drag cannot flip modes. */
-const HYSTERESIS = 120
 const SETTLE_MS = 400
+
+function readCompact() {
+  if (typeof window === 'undefined') return false
+  const vw = window.innerWidth
+  const vh = window.innerHeight
+  // A zero-size viewport is "not laid out yet", not "tiny phone".
+  if (!(vw > 0 && vh > 0)) return false
+  return Math.min(vw, vh) < 600
+}
+
+/** A phone-sized viewport: the short side is under 600px. */
+export const COMPACT = readCompact()
+
+/** Whether the wording should say "tap" rather than "click". */
+export const TOUCH =
+  COMPACT || (typeof window !== 'undefined' && (window.matchMedia?.('(pointer: coarse)').matches ?? false))
 
 function detectWebGL() {
   try {
@@ -40,29 +45,11 @@ function detectWebGL() {
 
 function evaluate() {
   if (typeof window === 'undefined') return { flat: false, reason: 'ssr' }
-
-  const vw = window.innerWidth
-  const vh = window.innerHeight
-
-  /* A zero-size viewport means "not laid out yet", not "tiny phone". It shows
-     up in hidden iframes, in some embedded webviews, and on the first tick in
-     browsers that report layout asynchronously. Reading it as a 0px-wide
-     screen sent those visitors to the flat site permanently, because the size
-     checks below would all pass and nothing afterwards re-ran them. Treat it
-     as unknown and let the resize listener decide once real numbers land. */
-  const measured = vw > 0 && vh > 0
-
-  const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false
-  const narrow = measured && Math.min(vw, vh) < 520
-  const small = measured && vw < MOBILE_MAX_WIDTH
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
 
   if (!detectWebGL()) return { flat: true, reason: 'no-webgl' }
   if (reducedMotion) return { flat: true, reason: 'reduced-motion' }
-  if (coarse && small) return { flat: true, reason: 'touch' }
-  if (narrow) return { flat: true, reason: 'viewport' }
-
-  return { flat: false, reason: measured ? 'desktop' : 'unmeasured' }
+  return { flat: false, reason: COMPACT ? 'mobile-3d' : 'desktop' }
 }
 
 export function useDevice() {
@@ -72,33 +59,18 @@ export function useDevice() {
 
   useEffect(() => {
     let timer
-
     const settle = () => {
       window.clearTimeout(timer)
       timer = window.setTimeout(() => {
         const next = evaluate()
-        if (next.flat === current.current.flat) return
-
-        // Only cross the line with room to spare, so a window sitting near the
-        // threshold does not thrash the whole scene in and out of existence.
-        const w = window.innerWidth
-        const clearlyOver = w > MOBILE_MAX_WIDTH + HYSTERESIS
-        const clearlyUnder = w < MOBILE_MAX_WIDTH - HYSTERESIS
-        const hardReason = next.reason === 'no-webgl' || next.reason === 'reduced-motion'
-
-        if (hardReason || (next.flat && clearlyUnder) || (!next.flat && clearlyOver)) {
-          setDevice(next)
-        }
+        if (next.flat !== current.current.flat) setDevice(next)
       }, SETTLE_MS)
     }
 
-    window.addEventListener('resize', settle)
-    const mq = window.matchMedia('(pointer: coarse)')
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
     mq.addEventListener?.('change', settle)
-
     return () => {
       window.clearTimeout(timer)
-      window.removeEventListener('resize', settle)
       mq.removeEventListener?.('change', settle)
     }
   }, [])

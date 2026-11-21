@@ -48,7 +48,7 @@ const NAV = [
 ]
 
 
-export default function ShowcaseApp({ deepLink }) {
+export default function ShowcaseApp({ deepLink, mobile = false }) {
   const [section, setSection] = useState('home')
   const scrollRef = useRef(null)
 
@@ -70,6 +70,51 @@ export default function ShowcaseApp({ deepLink }) {
   }, [section])
 
   const go = (id) => setSection(id)
+
+  /* PHONE LAYOUT. The two-column table does not survive a 390px screen: the
+     rail takes a third of it and leaves the document a column four words
+     wide. So the rail becomes a strip of buttons across the top, the document
+     takes the full width, and the whole page is drawn a fifth larger. It
+     scrolls natively here, because this copy is an ordinary fixed layer, not
+     the projected desktop inside the monitor. */
+  if (mobile) {
+    return (
+      <div className="flex h-full w-full flex-col overflow-hidden bg-[#fdfdfb] text-black" style={{ fontFamily: 'Georgia, "Times New Roman", Times, serif' }}>
+        <nav
+          aria-label="Showcase"
+          className="sc-mobile-nav flex shrink-0 gap-1 overflow-x-auto bg-[#c0c0c0] px-1.5 py-1.5"
+          style={{ boxShadow: 'inset 0 -1px 0 #808080' }}
+        >
+          {NAV.map((item) => {
+            const active = section === item.id
+            return (
+              <button
+                key={item.id}
+                type="button"
+                data-click-sound
+                aria-current={active ? 'page' : undefined}
+                data-pressed={active ? 'true' : 'false'}
+                onClick={() => go(item.id)}
+                className="w95-btn h-[40px] flex-auto px-[7px] text-[12px] font-bold tracking-[0.02em]"
+                style={{ fontFamily: "'Tahoma', 'Verdana', sans-serif" }}
+              >
+                <span className="w95-press">{item.label}</span>
+              </button>
+            )
+          })}
+        </nav>
+        <div ref={scrollRef} className="showcase-doc sc-mobile min-h-0 flex-1 select-text overflow-y-auto px-4 pb-10 pt-4">
+          <div key={section} className="sc-page-in">
+            {section === 'home' && <Home onGo={go} mobile />}
+            {section === 'about' && <About />}
+            {section === 'experience' && <Experience />}
+            {section === 'projects' && <Projects />}
+            {section === 'contact' && <Contact />}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-[#fdfdfb] text-black" style={{ fontFamily: 'Georgia, "Times New Roman", Times, serif' }}>
@@ -220,19 +265,19 @@ const HEADLINE_METRIC = { 'collections-intelligence': 3 }
    It stays a late-nineties homepage: serif body, slab headings, rules instead
    of cards, and every link underlined.
    ========================================================================== */
-function Home({ onGo }) {
+function Home({ onGo, mobile = false }) {
   const featured = projects.slice(0, 3)
 
   return (
     <div className="pb-4">
-      <div className="flex items-center gap-5">
+      <div className={mobile ? 'flex items-center gap-3.5' : 'flex items-center gap-5'}>
         <img
           src={profile.avatar || '/avatar.jpg'}
           alt={profile.name}
-          className="h-[88px] w-[88px] shrink-0 rounded-full border-2 border-black/30 object-cover"
+          className={`${mobile ? 'h-[68px] w-[68px]' : 'h-[88px] w-[88px]'} shrink-0 rounded-full border-2 border-black/30 object-cover`}
         />
         <div className="min-w-0">
-          <h1 className="showcase-display text-[42px] leading-none">{profile.name}</h1>
+          <h1 className={`showcase-display leading-none ${mobile ? 'text-[32px]' : 'text-[42px]'}`}>{profile.name}</h1>
           <p className="showcase-display mt-1.5 text-[16px]">{profile.role}</p>
           <p className="mt-1 text-[12.5px] italic">
             {education.degree} &middot; {education.startYear}&ndash;{education.endYear}
@@ -251,7 +296,7 @@ function Home({ onGo }) {
       <p className="mt-4">{profile.positioning}</p>
 
       {/* ---------------------------------------------------- the numbers */}
-      <div className="mt-5 grid grid-cols-3 gap-4">
+      <div className={mobile ? 'mt-5 grid grid-cols-1 gap-3.5' : 'mt-5 grid grid-cols-3 gap-4'}>
         {featured.map((p) => {
           const m = p.metrics[HEADLINE_METRIC[p.id] ?? 0]
           return (

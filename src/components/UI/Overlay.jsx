@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Download, LogOut, Moon, Sun, Volume2, VolumeX } from 'lucide-react'
 import { profile } from '../../data/portfolio'
 import TypewriterText from './TypewriterText'
+import { COMPACT, TOUCH } from '../../hooks/useDevice'
 
 /* ==========================================================================
    Overlay — the 2D chrome floating over the 3D room.
@@ -75,7 +76,14 @@ export default function Overlay({
   const isLight = appearance === 'LIGHT'
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-50 flex flex-col justify-between p-6 select-none">
+    <div
+      className="pointer-events-none absolute inset-0 z-50 flex flex-col justify-between p-3 select-none sm:p-6"
+      /* Keeps the slabs clear of a notch and of the home indicator. */
+      style={{
+        paddingTop: 'max(0.75rem, env(safe-area-inset-top))',
+        paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
+      }}
+    >
       {/* ------------------------------------------------------------ top */}
       {/* Stacked slabs in one corner, not a name on the left and a row of
           round buttons on the right. Two clusters at opposite ends of the
@@ -126,7 +134,7 @@ export default function Overlay({
                 is one of them. These four are everything they came for, and
                 they are reachable from the first frame without sitting down at
                 the desk. Anchors, so the room's click-to-enter ignores them. */}
-            <div className="pointer-events-auto mt-1 flex items-center gap-1 animate-fade-in" style={{ animationDelay: '1.6s' }}>
+            <div className="pointer-events-auto mt-1 flex max-w-full flex-wrap items-center gap-1 animate-fade-in" style={{ animationDelay: '1.6s' }}>
               <SlabLink href="/Adarsh_Sahu_Resume_DataScience.pdf" download="Adarsh_Sahu_Resume_DataScience.pdf" primary>
                 <Download size={12} />
                 <span>R&eacute;sum&eacute;</span>
@@ -138,14 +146,16 @@ export default function Overlay({
           </>
         )}
 
-        {isZoomed && (
+        {isZoomed && !COMPACT && (
           <button
             onClick={onZoomOut}
-            className="animate-fade-in pointer-events-auto flex items-center gap-2 bg-[#111] px-3 py-1.5 font-mono text-[12px] tracking-wide text-white transition hover:bg-[#222] active:scale-95"
+            className="animate-fade-in pointer-events-auto flex min-h-[34px] items-center gap-2 bg-[#111] px-3 py-1.5 font-mono text-[12px] tracking-wide text-white transition hover:bg-[#222] active:scale-95"
           >
             <LogOut size={12} />
             <span>Back to room</span>
-            <kbd className="ml-1 border border-white/30 px-1 text-[10px] leading-[14px] text-zinc-300">Esc</kbd>
+            {!TOUCH && (
+              <kbd className="ml-1 border border-white/30 px-1 text-[10px] leading-[14px] text-zinc-300">Esc</kbd>
+            )}
           </button>
         )}
       </div>
@@ -182,11 +192,15 @@ export default function Overlay({
               prompt brightens and names the action, so the hover and the
               click read as one gesture: point at it, then take the seat. */}
           <div
-            className={`bg-[#111] px-3.5 py-1.5 font-mono text-[13px] tracking-wide text-white transition-[opacity,transform] duration-300 ${
+            className={`bg-[#111] px-3 py-1.5 text-center font-mono text-[13px] tracking-wide text-white sm:px-3.5 transition-[opacity,transform] duration-300 ${
               monitorHover ? 'translate-y-[-2px] opacity-100' : hintDismissed ? 'opacity-55' : 'opacity-100'
             }`}
           >
-            {monitorHover ? 'Click to sit at the computer' : 'Click anywhere to sit down'}{' '}
+            {TOUCH
+              ? 'Tap to sit down · drag to look around'
+              : monitorHover
+                ? 'Click to sit at the computer'
+                : 'Click anywhere to sit down'}{' '}
             <span className="caret">_</span>
           </div>
         </div>
@@ -201,7 +215,7 @@ export default function Overlay({
 function Slab({ children, tabular }) {
   return (
     <span
-      className={`pointer-events-auto inline-block bg-[#111] px-2.5 py-1 font-mono text-[13px] leading-snug text-white ${
+      className={`pointer-events-auto inline-block max-w-full bg-[#111] px-2.5 py-1 font-mono text-[13px] leading-snug text-white ${
         tabular ? 'tabular-nums' : ''
       }`}
     >
@@ -218,7 +232,7 @@ function SlabLink({ children, href, download, primary }) {
       download={download || undefined}
       target={external ? '_blank' : undefined}
       rel={external ? 'noreferrer' : undefined}
-      className={`inline-flex h-[26px] items-center gap-1.5 px-2.5 font-mono text-[12px] leading-none transition active:scale-95 ${
+      className={`inline-flex ${TOUCH ? 'h-[36px] px-3 text-[13px]' : 'h-[26px] px-2.5 text-[12px]'} items-center gap-1.5 font-mono leading-none transition active:scale-95 ${
         primary ? 'bg-white text-[#111] ring-1 ring-inset ring-[#111] hover:bg-zinc-200' : 'bg-[#111] text-white hover:bg-[#2a2a2a]'
       }`}
     >
@@ -234,7 +248,7 @@ function SlabButton({ children, label, onClick }) {
       title={label}
       aria-label={label}
       onClick={onClick}
-      className="pointer-events-auto grid h-[26px] w-[26px] place-items-center bg-[#111] text-white transition hover:bg-[#2a2a2a] active:scale-95"
+      className={`pointer-events-auto grid ${TOUCH ? 'h-[28px] w-[34px]' : 'h-[26px] w-[26px]'} place-items-center bg-[#111] text-white transition hover:bg-[#2a2a2a] active:scale-95`}
     >
       {children}
     </button>

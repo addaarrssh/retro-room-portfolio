@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { COMPACT } from './useDevice'
 
 /* ==========================================================================
    useWindowManager — the desktop's window list, stacking order and focus.
@@ -9,8 +10,13 @@ import { useCallback, useState } from 'react'
    pointer deltas back into this space before calling move()/resize().
    ========================================================================== */
 
-export const SCREEN_W = 1024
-export const SCREEN_H = 768
+/* On a phone the monitor is drawn about 380px wide, so a 1024px desktop put
+   12px interface text near 4px. There the desktop is laid out at half the
+   resolution and DesktopOS scales it up by UI_SCALE to fill the same glass:
+   everything on it is twice the size, and windows open maximised. */
+export const UI_SCALE = COMPACT ? 2 : 1
+export const SCREEN_W = 1024 / UI_SCALE
+export const SCREEN_H = 768 / UI_SCALE
 
 /* Windows 95 chrome: one bar, at the BOTTOM, and nothing at the top.
    That single fact is most of why this desktop reads as Windows rather than
@@ -25,6 +31,9 @@ const CASCADE_STEP = 26
 const MIN_W = 300
 const MIN_H = 200
 
+/** The geometry of a maximised window: the whole screen above the taskbar. */
+const FULL = { x: 0, y: MENUBAR_H, w: SCREEN_W, h: SCREEN_H - MENUBAR_H - DOCK_H }
+
 /* The Showcase window is open on arrival, and it is deliberately large and
    near-centred: it is not one app among several, it is the site. Everything
    else on this desktop is an aside. Left inset clears the icon column. */
@@ -34,13 +43,10 @@ const DEFAULT_INITIAL_WINDOWS = [
     appId: 'showcase',
     title: 'Adarsh Sahu - Showcase 2026',
     label: 'My Showcase',
-    x: 108,
-    y: 26,
-    w: 872,
-    h: 668,
+    ...(COMPACT ? FULL : { x: 108, y: 26, w: 872, h: 668 }),
     restore: null,
     minimized: false,
-    maximized: false,
+    maximized: COMPACT,
     z: 10,
   },
 ]
@@ -85,6 +91,7 @@ export function useWindowManager({ onOpen, onClose, onFocus, onMinimize } = {}) 
 
         // Cascade each new window down-right from the last one.
         const n = prev.length
+        const full = COMPACT || app.id === 'portfolio-v3'
         const w = Math.min(app.width, SCREEN_W - 40)
         const h = Math.min(app.height, SCREEN_H - TASKBAR_H - 40)
         const x = Math.max(10, Math.min(SCREEN_W - w - 10, Math.round((SCREEN_W - w) / 2) + n * CASCADE_STEP))
@@ -105,14 +112,11 @@ export function useWindowManager({ onOpen, onClose, onFocus, onMinimize } = {}) 
             title: app.title,
             label: app.label,
             icon: app.icon,
-            x,
-            y,
-            w,
-            h,
+            ...(COMPACT ? FULL : { x, y, w, h }),
             // Remember the floating geometry so un-maximizing restores it.
             restore: null,
             minimized: false,
-            maximized: app.id === 'portfolio-v3',
+            maximized: full,
             z: topZ + 1,
           },
         ]

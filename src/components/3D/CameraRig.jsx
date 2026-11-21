@@ -3,6 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { Vector3 } from 'three'
 import { SCREEN, SEAT_Y, monitorViewDistance } from './layout'
 import { INTRO_MS, SIT_MS, STAND_MS } from './timing'
+import { COMPACT } from '../../hooks/useDevice'
 
 /* ==========================================================================
    CameraRig — the only thing allowed to move the camera.
@@ -53,11 +54,54 @@ export const VIEWS = {
    the distance is solved from the aspect ratio, and clamped so a very wide
    window does not push the camera through the front of the desk. */
 const SET_WIDTH = 5.7
-function roomDistance(fovDeg, aspect) {
-  const halfFov = Math.tan((fovDeg * Math.PI) / 180 / 2)
-  const d = SET_WIDTH / (2 * halfFov * aspect)
-  return Math.min(9.5, Math.max(5.2, d))
+
+/* PORTRAIT. A phone held upright is about 0.46 wide for every 1 tall, and at
+   the 34 degree lens the room was composed for, fitting a 4.3m set into that
+   sliver puts the camera twenty metres away, deep in the fog. So a portrait
+   frame gets a wider lens (up to 55 degrees), a tighter margin around the set,
+   and a slightly longer leash on the distance. `portraitness` is 0 at a square
+   window and 1 from an aspect of 0.5 down, so a window being dragged narrower
+   eases between the two framings instead of snapping. */
+const FOV_WIDE = 34
+const FOV_PORTRAIT = 50
+const SET_WIDTH_PORTRAIT = 3.65
+
+/* THE PORTRAIT HERO SHOT. Head-on, a set that is 4.3m wide and 1.5m tall can
+   only ever be a thin band across the middle of an upright phone, with empty
+   backdrop above and below it. So the phone does not get the head-on shot.
+   The camera swings round to the chair side and lifts, which turns the set
+   corner-on: its width is foreshortened, its depth runs up the frame, and the
+   desk, monitor and chair stack into the tall shape the screen actually has.
+   It also happens to be the angle from which the scene is most obviously
+   three-dimensional, which is the right first impression for the one device
+   where nobody can move a mouse to find that out. */
+const PORTRAIT_YAW = 0.62
+const PORTRAIT_PITCH = 0.25
+const portraitness = (aspect) => Math.min(1, Math.max(0, (1 - aspect) / 0.5))
+export function fovForAspect(aspect) {
+  return FOV_WIDE + (FOV_PORTRAIT - FOV_WIDE) * portraitness(aspect)
 }
+
+function roomDistance(fovDeg, aspect) {
+  const p = portraitness(aspect)
+  const halfFov = Math.tan((fovDeg * Math.PI) / 180 / 2)
+  const width = SET_WIDTH + (SET_WIDTH_PORTRAIT - SET_WIDTH) * p
+  const d = width / (2 * halfFov * aspect)
+  return Math.min(9.5 + 1.5 * p, Math.max(5.2, d))
+}
+
+/* TOUCH LOOK-AROUND. A finger dragged across the room swings the camera
+   around the desk. This is not the free orbit that was removed above: the
+   swing is clamped to an arc in front of the set, so there is no way to end up
+   behind the monitor or under the floor, and it is done here, by the rig, so
+   nothing else is writing to the camera. Radians per pixel of drag. */
+const ORBIT_SPEED = 0.006
+const ORBIT_YAW_MAX = 0.7
+const ORBIT_PITCH_MIN = -0.3
+const ORBIT_PITCH_MAX = 0.22
+const _orbit = new Vector3()
+const _right = new Vector3()
+const _up = new Vector3(0, 1, 0)
 
 
 /* How far the shot travels, in metres, at full pointer deflection.
@@ -164,6 +208,16 @@ const INTRO_TARGET = [0, 0.55, 0]
 
 export default function CameraRig({ viewState, entered = true }) {
   const { camera, size } = useThree()
+  const aspect = size.width / size.height || 16 / 9
+  const fov = fovForAspect(aspect)
+
+  /* The lens follows the window shape. Set here rather than on <Canvas>,
+     whose camera props are only read once at mount. */
+  useEffect(() => {
+    if (Math.abs(camera.fov - fov) < 0.01) return
+    camera.fov = fov
+    camera.updateProjectionMatrix()
+  }, [camera, fov])
 
   /* The seated shot: flush to the glass, derived from viewport aspect because
      a narrow window is width-limited and has to sit further back to keep the
@@ -175,17 +229,32 @@ export default function CameraRig({ viewState, entered = true }) {
      camera surging in or out. Sitting down is now a decision: click, arrive,
      stay put until you choose to stand. */
   const monitorView = useMemo(() => {
-    const aspect = size.width / size.height || 16 / 9
+    /* On a phone the glass has to fill the frame or nothing on it can be
+       read, so the air around the monitor is given up: almost flush across
+       the width in portrait, a little looser in landscape where the limit is
+       height and the chin under the display would otherwise be cut. */
+    const margin = COMPACT ? (aspect < 1 ? 1.05 : 1.14) : undefined
     return {
-      flush: monitorViewDistance(camera.fov, aspect),
+      flush: monitorViewDistance(fov, aspect, margin),
       target: [0, SEAT_Y, SCREEN.z],
     }
-  }, [camera.fov, size.width, size.height])
+  }, [fov, aspect])
 
   /* Resting room position for this window shape. Held in a ref and read every
      frame, so a resize re-frames the room without restarting anything. */
   const roomPos = useRef([...VIEWS.ROOM.position])
-  roomPos.current[2] = roomDistance(camera.fov, size.width / size.height || 16 / 9)
+  {
+    const p = portraitness(aspect)
+    _orbit.set(0, VIEWS.ROOM.position[1] - ROOM_TARGET[1], roomDistance(fov, aspect) - ROOM_TARGET[2])
+    if (p > 0) {
+      _orbit.applyAxisAngle(_up, PORTRAIT_YAW * p)
+      _right.crossVectors(_up, _orbit).normalize()
+      _orbit.applyAxisAngle(_right, -PORTRAIT_PITCH * p)
+    }
+    roomPos.current[0] = ROOM_TARGET[0] + _orbit.x
+    roomPos.current[1] = ROOM_TARGET[1] + _orbit.y
+    roomPos.current[2] = ROOM_TARGET[2] + _orbit.z
+  }
 
   const flight = useRef({
     active: false,
@@ -204,6 +273,50 @@ export default function CameraRig({ viewState, entered = true }) {
      accumulating lets the shot wander away from the composed framing over the
      course of a visit. */
   const drift = useRef(new Vector3())
+
+  /* Touch look-around state. `touch` flips on at the first finger and stays
+     on: from then the pointer parallax is off, because on a touch screen
+     "where the pointer is" is just wherever the last tap happened to land. */
+  const orbit = useRef({ yaw: 0, pitch: 0, goalYaw: 0, goalPitch: 0, touch: false, id: null, x: 0, y: 0 })
+  const viewRef = useRef(viewState)
+  viewRef.current = viewState
+
+  useEffect(() => {
+    const o = orbit.current
+    const down = (e) => {
+      if (e.pointerType !== 'touch') return
+      o.touch = true
+      if (viewRef.current !== 'ROOM' || o.id !== null) return
+      if (e.target?.closest?.('button, a, input, textarea, [data-os-screen]')) return
+      o.id = e.pointerId
+      o.x = e.clientX
+      o.y = e.clientY
+    }
+    const move = (e) => {
+      if (e.pointerId !== o.id) return
+      if (viewRef.current !== 'ROOM') return
+      o.goalYaw = Math.min(ORBIT_YAW_MAX, Math.max(-ORBIT_YAW_MAX, o.goalYaw - (e.clientX - o.x) * ORBIT_SPEED))
+      o.goalPitch = Math.min(
+        ORBIT_PITCH_MAX,
+        Math.max(ORBIT_PITCH_MIN, o.goalPitch + (e.clientY - o.y) * ORBIT_SPEED),
+      )
+      o.x = e.clientX
+      o.y = e.clientY
+    }
+    const up = (e) => {
+      if (e.pointerId === o.id) o.id = null
+    }
+    window.addEventListener('pointerdown', down)
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+    window.addEventListener('pointercancel', up)
+    return () => {
+      window.removeEventListener('pointerdown', down)
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      window.removeEventListener('pointercancel', up)
+    }
+  }, [])
 
   /* The reveal. Until START is pressed the camera is parked at the intro pose
      (behind an opaque loading screen, so nobody sees it); the moment it is
@@ -247,6 +360,11 @@ export default function CameraRig({ viewState, entered = true }) {
     f.fromTarget.copy(f.target)
 
     if (goingIn) {
+      // Standing back up returns to the composed shot, not to wherever the
+      // last drag left the camera.
+      const o = orbit.current
+      o.yaw = o.pitch = o.goalYaw = o.goalPitch = 0
+      o.id = null
       f.to.set(0, SEAT_Y, SCREEN.z + monitorView.flush)
       f.toTarget.set(...monitorView.target)
     } else {
@@ -324,10 +442,18 @@ export default function CameraRig({ viewState, entered = true }) {
        Frame-rate independent smoothing: `1 - exp(-k * dt)` feels the same at
        60Hz and 120Hz, where a plain per-frame lerp would not. */
     const k = 1 - Math.exp(-PARALLAX_EASE * delta)
-    drift.current.x += (state.pointer.x * PARALLAX_X - drift.current.x) * k
-    drift.current.y += (state.pointer.y * PARALLAX_Y - drift.current.y) * k
+    const o = orbit.current
+    const px = o.touch ? 0 : state.pointer.x
+    const py = o.touch ? 0 : state.pointer.y
+    drift.current.x += (px * PARALLAX_X - drift.current.x) * k
+    drift.current.y += (py * PARALLAX_Y - drift.current.y) * k
     // Pointer UP eases the camera IN, which is why this is negated.
-    drift.current.z += (-state.pointer.y * PARALLAX_Z - drift.current.z) * k
+    drift.current.z += (-py * PARALLAX_Z - drift.current.z) * k
+
+    // The swing trails the finger a little, the same weight as the parallax.
+    const ko = 1 - Math.exp(-9 * delta)
+    o.yaw += (o.goalYaw - o.yaw) * ko
+    o.pitch += (o.goalPitch - o.pitch) * ko
 
     // Wall-clock, so a tab restored from the background does not jump.
     const t = performance.now() / 1000
@@ -337,6 +463,14 @@ export default function CameraRig({ viewState, entered = true }) {
       roomPos.current[1] + drift.current.y + floatAxis(FLOAT.y, t),
       roomPos.current[2] + drift.current.z + floatAxis(FLOAT.z, t),
     )
+
+    if (o.yaw !== 0 || o.pitch !== 0) {
+      _orbit.set(camera.position.x - ROOM_TARGET[0], camera.position.y - ROOM_TARGET[1], camera.position.z - ROOM_TARGET[2])
+      _orbit.applyAxisAngle(_up, o.yaw)
+      _right.crossVectors(_up, _orbit).normalize()
+      _orbit.applyAxisAngle(_right, -o.pitch)
+      camera.position.set(ROOM_TARGET[0] + _orbit.x, ROOM_TARGET[1] + _orbit.y, ROOM_TARGET[2] + _orbit.z)
+    }
 
     /* The target follows at a fraction of the camera's travel, so moves read
        as a handheld drift rather than a turntable orbit. */

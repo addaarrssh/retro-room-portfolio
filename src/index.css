@@ -818,3 +818,89 @@ canvas {
     animation: none;
   }
 }
+
+/* ==========================================================================
+   The computer on a phone (MobileOS).
+
+   · The page is drawn a fifth larger than on the monitor, with `zoom` rather
+     than a font-size, because the Showcase sets its sizes in pixels and zoom
+     scales every one of them and reflows the column to match.
+   · Left-aligned, not justified: a justified column this narrow opens rivers
+     of white between the words.
+   · Links get room around them, so two neighbours are not one thumb apart.
+   ========================================================================== */
+.sc-mobile {
+  zoom: 1.2;
+  text-align: left;
+  hyphens: manual;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+.sc-mobile {
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  /* A phone draws its own scroll indicator; the chunky grey system scrollbar
+     would cost a 390px column a twentieth of its width. */
+  scrollbar-width: none;
+}
+.sc-mobile::-webkit-scrollbar {
+  display: none;
+}
+/* Heading-and-date rows: on the monitor the date sits at the right end of the
+   heading's line. Here it drops underneath rather than pushing the heading
+   off the side of the page. */
+.sc-mobile .justify-between {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+.sc-mobile .sc-link {
+  display: inline-block;
+  padding-block: 3px;
+}
+.sc-mobile input,
+.sc-mobile textarea {
+  /* Under 16px, iOS zooms the whole page in when a field takes focus. */
+  font-size: 14px;
+  padding: 7px 8px;
+  max-width: none;
+}
+.sc-mobile-nav {
+  scrollbar-width: none;
+  touch-action: pan-x;
+  overscroll-behavior: contain;
+}
+.sc-mobile-nav::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes mobile-os-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes mobile-os-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+.mobile-os {
+  transform-origin: 50% 48%;
+  will-change: transform, opacity;
+}
+.mobile-os-in {
+  animation: mobile-os-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.mobile-os-out {
+  animation: mobile-os-out 170ms cubic-bezier(0.4, 0, 1, 1) both;
+}
